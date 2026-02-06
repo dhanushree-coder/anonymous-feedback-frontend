@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>College Templates</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="college-templates.css">
+</head>
+<body>
+
+<nav class="navbar">
+    <div class="logo">Anonymous Feedback System - Colleges</div>
+</nav>
+
+<div class="college-page-container" id="collegePage">
+    <section class="college-header">
+        <h2>College Feedback Templates</h2>
+        <p class="subtext">
+            Select a facility to customize feedback forms. You can combine multiple facilities into a single form if needed.
+        </p>
+        <button class="back-btn" onclick="goBackToDashboard()">← Back to Dashboard</button>
+    </section>
+
+    <section class="college-services">
+        <div class="services-grid">
+            <div class="service-card" data-service="Teaching & Faculty Quality">
+                <h3>Teaching & Faculty Quality</h3>
+                <p>Faculty knowledge, teaching effectiveness, fairness, and support.</p>
+            </div>
+            <div class="service-card" data-service="Academic Curriculum & Evaluation">
+                <h3>Academic Curriculum & Evaluation</h3>
+                <p>Course relevance, evaluation methods, workload, and outcomes.</p>
+            </div>
+            <div class="service-card" data-service="Classroom & Learning Environment">
+                <h3>Classroom & Learning Environment</h3>
+                <p>Seating, ambience, noise, and learning comfort.</p>
+            </div>
+            <div class="service-card" data-service="Laboratory Facilities">
+                <h3>Laboratory Facilities</h3>
+                <p>Equipment, safety, accessibility, and practical learning support.</p>
+            </div>
+            <div class="service-card" data-service="Library & Learning Resources">
+                <h3>Library & Learning Resources</h3>
+                <p>Books, e-resources, reading spaces, and access.</p>
+            </div>
+            <div class="service-card" data-service="Research & Innovation Support">
+                <h3>Research & Innovation Support</h3>
+                <p>Projects, funding, mentoring, and infrastructure.</p>
+            </div>
+            <div class="service-card" data-service="Internship & Industry Exposure">
+                <h3>Internship & Industry Exposure</h3>
+                <p>Industry tie-ups, internships, and field visits.</p>
+            </div>
+            <div class="service-card" data-service="Placement & Career Support">
+                <h3>Placement & Career Support</h3>
+                <p>Placement training, opportunities, and career guidance.</p>
+            </div>
+            <div class="service-card" data-service="Hostel & Accommodation">
+                <h3>Hostel & Accommodation</h3>
+                <p>Rooms, hygiene, safety, and hostel management.</p>
+            </div>
+            <div class="service-card" data-service="Food & Canteen Services">
+                <h3>Food & Canteen Services</h3>
+                <p>Food quality, hygiene, pricing, and variety.</p>
+            </div>
+            <div class="service-card" data-service="Sports & Fitness Facilities">
+                <h3>Sports & Fitness Facilities</h3>
+                <p>Gyms, grounds, equipment, and sports events.</p>
+            </div>
+            <div class="service-card" data-service="Extra-Curricular & Student Clubs">
+                <h3>Extra-Curricular & Student Clubs</h3>
+                <p>Clubs, cultural events, and student-led activities.</p>
+            </div>
+            <div class="service-card" data-service="Discipline & Campus Safety">
+                <h3>Discipline & Campus Safety</h3>
+                <p>Rules, security, anti-ragging, and grievance handling.</p>
+            </div>
+            <div class="service-card" data-service="Infrastructure & Campus Facilities">
+                <h3>Infrastructure & Campus Facilities</h3>
+                <p>Buildings, classrooms, Wi-Fi zones, and common spaces.</p>
+            </div>
+            <div class="service-card" data-service="Administrative & Office Support">
+                <h3>Administrative & Office Support</h3>
+                <p>Office help, fee support, and documentation.</p>
+            </div>
+            <div class="service-card" data-service="Communication & Student Support">
+                <h3>Communication & Student Support</h3>
+                <p>Notices, mentoring, counselling, and helpdesks.</p>
+            </div>
+            <div class="service-card" data-service="Transport Services">
+                <h3>Transport Services</h3>
+                <p>Bus facilities, routes, safety, and punctuality.</p>
+            </div>
+            <div class="service-card" data-service="Health & Medical Facilities">
+                <h3>Health & Medical Facilities</h3>
+                <p>Medical rooms, emergency support, and health camps.</p>
+            </div>
+            <div class="service-card" data-service="Digital Facilities & Online Services">
+                <h3>Digital Facilities & Online Services</h3>
+                <p>LMS, online exams, portals, and Wi-Fi connectivity.</p>
+            </div>
+            <div class="service-card" data-service="Overall College Experience">
+                <h3>Overall College Experience</h3>
+                <p>Overall satisfaction with campus life and academics.</p>
+            </div>
+        </div>
+    </section>
+</div>
+
+<!-- Modal for combine options -->
+<div id="combineModal" class="modal-overlay">
+    <div class="modal-box">
+        <h3 id="modalTitle">Customize Template</h3>
+        <p class="subtext" id="modalServiceText"></p>
+
+        <div class="modal-options">
+            <label>
+                <input type="radio" name="combineOption" value="mass" checked>
+                Mass combine (all facilities in one form)
+            </label>
+            <label>
+                <input type="radio" name="combineOption" value="single">
+                No combine (only this facility)
+            </label>
+            <label>
+                <input type="radio" name="combineOption" value="custom">
+                Combine 2 or more selected facilities
+            </label>
+        </div>
+
+        <div id="customServicesContainer" class="custom-services">
+            <p class="subtext">Select facilities to combine:</p>
+            <div id="customServicesList" class="custom-services-list">
+                <!-- checkboxes injected by JS -->
+            </div>
+        </div>
+
+        <div class="modal-actions">
+            <button type="button" class="primary-btn" onclick="confirmTemplateChoice()">Continue</button>
+            <button type="button" class="secondary-btn" onclick="closeModal()">Cancel</button>
+        </div>
+    </div>
+</div>
+
+<script>
+const collegePage = document.getElementById('collegePage');
+const serviceCards = document.querySelectorAll('.service-card');
+const modal = document.getElementById('combineModal');
+const modalTitle = document.getElementById('modalTitle');
+const modalServiceText = document.getElementById('modalServiceText');
+const customServicesContainer = document.getElementById('customServicesContainer');
+const customServicesList = document.getElementById('customServicesList');
+
+let allServices = [];
+let selectedMainService = null;
+
+serviceCards.forEach(card => {
+    allServices.push(card.getAttribute('data-service'));
+});
+
+serviceCards.forEach(card => {
+    card.addEventListener('click', () => {
+        selectedMainService = card.getAttribute('data-service');
+        openModal(selectedMainService);
+    });
+});
+
+function openModal(serviceName) {
+    modalTitle.textContent = "Customize Template for: " + serviceName;
+    modalServiceText.textContent = "Choose how you want to combine \"" + serviceName + "\" with other college facilities.";
+    document.querySelectorAll('input[name="combineOption"]').forEach(r => {
+        r.checked = r.value === 'mass';
+    });
+    buildCustomServicesList(serviceName);
+    customServicesContainer.style.display = 'none';
+    collegePage.classList.add('blur-background');
+    modal.style.display = 'flex';
+}
+
+function closeModal() {
+    modal.style.display = 'none';
+    collegePage.classList.remove('blur-background');
+}
+
+document.querySelectorAll('input[name="combineOption"]').forEach(radio => {
+    radio.addEventListener('change', () => {
+        if (radio.value === 'custom' && radio.checked) {
+            customServicesContainer.style.display = 'block';
+        } else if (radio.checked) {
+            customServicesContainer.style.display = 'none';
+        }
+    });
+});
+
+function buildCustomServicesList(mainService) {
+    customServicesList.innerHTML = '';
+    allServices.forEach(service => {
+        if (service === mainService) return;
+        const label = document.createElement('label');
+        label.className = 'custom-service-item';
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.value = service;
+        label.appendChild(checkbox);
+        label.appendChild(document.createTextNode(" " + service));
+        customServicesList.appendChild(label);
+    });
+}
+
+function confirmTemplateChoice() {
+    const option = document.querySelector('input[name="combineOption"]:checked').value;
+
+    let combinedServices = [];
+    if (option === 'mass') {
+        combinedServices = [...allServices];
+    } else if (option === 'single') {
+        combinedServices = [selectedMainService];
+    } else if (option === 'custom') {
+        combinedServices = [selectedMainService];
+        const selectedCheckboxes = customServicesList.querySelectorAll('input[type="checkbox"]:checked');
+        selectedCheckboxes.forEach(cb => combinedServices.push(cb.value));
+    }
+
+    const payload = {
+        mainService: selectedMainService,
+        option,
+        services: combinedServices
+    };
+    localStorage.setItem("collegeFormConfig", JSON.stringify(payload));
+
+    closeModal();
+    window.location.href = "college-form-builder.html";
+}
+
+function goBackToDashboard() {
+    window.location.href = "admin-dashboard.html";
+}
+</script>
+
+</body>
+</html>

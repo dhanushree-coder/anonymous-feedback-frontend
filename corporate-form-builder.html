@@ -1,0 +1,994 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Corporate Form Builder</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="form-builder-corgo.css">
+</head>
+<body>
+
+<nav class="navbar">
+    <div class="logo">Anonymous Feedback System - Corporate Form Builder</div>
+</nav>
+
+<div class="form-builder-container">
+    <header class="form-builder-header">
+        <h2>Customize Corporate Feedback Form</h2>
+        <p class="subtext">
+            Edit questions for each selected corporate facility. You can add, update, delete, reorder questions and modify answer types and options.
+        </p>
+        <div class="form-name-row">
+            <label for="formName">Form name:</label>
+            <input type="text" id="formName" placeholder="Untitled Corporate Form">
+        </div>
+        <button class="back-btn" onclick="goBackToTemplates()">← Back to Templates</button>
+    </header>
+
+    <main id="servicesContainer">
+        <!-- Facility sections injected by JS -->
+    </main>
+
+    <section class="overall-rating-section">
+        <h3>Overall Rating</h3>
+        <p class="subtext">Please set the overall rating question (required, 1–5 stars).</p>
+
+        <div class="stars-container" id="starsContainer">
+            <span data-value="1">★</span>
+            <span data-value="2">★</span>
+            <span data-value="3">★</span>
+            <span data-value="4">★</span>
+            <span data-value="5">★</span>
+        </div>
+        <p id="ratingLabel" class="subtext">Rating: not set</p>
+
+        <!-- HIDDEN BY DEFAULT -->
+        <div id="reasonContainer" class="reason-container" style="display: none;">
+            <label for="ratingReason">Reason for low rating (required for 1–2 stars):</label>
+            <textarea id="ratingReason" placeholder="Please enter the reason..."></textarea>
+        </div>
+    </section>
+
+    <section class="form-builder-actions">
+        <button class="secondary-btn" onclick="saveDraft()">Save Draft</button>
+        <button class="primary-btn" onclick="submitForm()">Submit Form</button>
+    </section>
+</div>
+
+<script>
+// ---------------- URL / CONFIG ----------------
+let urlParams = new URLSearchParams(window.location.search);
+let templateIdFromUrl = urlParams.get("id");
+
+let config = null;
+try {
+    const raw = localStorage.getItem("corporateFormConfig");
+    if (raw) {
+        config = JSON.parse(raw);
+    }
+} catch (e) {
+    console.error("Error reading corporate config:", e);
+}
+
+const servicesContainer = document.getElementById('servicesContainer');
+const formNameInput = document.getElementById('formName');
+
+// ------------- CORPORATE QUESTION BANK -------------
+const facilityQuestionBankCorporate = {
+    "Work Environment & Office Culture": [
+        { text: "How comfortable and conducive is the physical office environment for doing your job?", type: "rating", options: [] },
+        { text: "How would you rate the overall friendliness and respect in day-to-day interactions at work?", type: "rating", options: [] },
+        { text: "To what extent do you feel a sense of belonging in this organization?", type: "rating", options: [] },
+        { text: "How well does the workplace culture support collaboration rather than unhealthy competition?", type: "rating", options: [] },
+        { text: "How inclusive is the office culture towards different personalities and working styles?", type: "rating", options: [] },
+        { text: "How comfortable do you feel expressing your opinions or ideas in the workplace?", type: "rating", options: [] },
+        { text: "How often do you see positive recognition and appreciation being given to employees?", type: "rating", options: [] },
+        { text: "How fairly are people treated regardless of job level or department?", type: "rating", options: [] },
+        { text: "How effectively does the organization discourage gossip, harassment, or disrespectful behavior?", type: "rating", options: [] },
+        { text: "How supportive are your colleagues when you need help or guidance?", type: "rating", options: [] },
+        { text: "How frequently do you feel stressed due to the work environment or culture?", type: "rating", options: [] },
+        { text: "How well does the culture support learning from mistakes rather than blaming individuals?", type: "rating", options: [] },
+        { text: "How comfortable do you feel taking short breaks without being judged?", type: "rating", options: [] },
+        { text: "How satisfied are you with celebrations, team events, or informal get-togethers in the workplace?", type: "rating", options: [] },
+        { text: "How aligned do you feel with the organization’s stated values and behaviors?", type: "rating", options: [] },
+        { text: "How often do you witness behavior that contradicts the organization’s stated values?", type: "rating", options: [] },
+        { text: "How safe do you feel raising cultural or behavioral concerns about the work environment?", type: "rating", options: [] },
+        { text: "What aspects of the work environment or culture do you value the most?", type: "short", options: [] },
+        { text: "What aspects of the work environment or culture do you feel need immediate improvement?", type: "short", options: [] },
+        { text: "How would you describe the general mood in your office most days?", type: "multiple", options: ["Very positive", "Mostly positive", "Neutral", "Mostly negative", "Very negative"] },
+        { text: "How satisfied are you with the level of trust between employees and leadership?", type: "rating", options: [] },
+        { text: "How fairly are conflicts between employees handled in your opinion?", type: "rating", options: [] },
+        { text: "How would you rate the overall work environment and office culture in this organization?", type: "rating", options: [] },
+        { text: "How likely are you to recommend this organization as a good place to work to your friends?", type: "rating", options: [] },
+        { text: "Please share any additional comments on work environment and office culture.", type: "short", options: [] }
+    ],
+
+    "Management & Leadership": [
+        { text: "How clearly does senior leadership communicate the organization’s vision and direction?", type: "rating", options: [] },
+        { text: "How confident are you in the decisions made by the leadership team?", type: "rating", options: [] },
+        { text: "How approachable are your managers and leaders when you need support or clarification?", type: "rating", options: [] },
+        { text: "How frequently do leaders seek feedback from employees on important initiatives?", type: "rating", options: [] },
+        { text: "How effectively does leadership act on employee feedback when it is given?", type: "rating", options: [] },
+        { text: "How well do leaders role-model the values and behaviors expected in the organization?", type: "rating", options: [] },
+        { text: "How transparent are leaders about major changes or decisions that impact employees?", type: "rating", options: [] },
+        { text: "How fairly do you feel leaders treat people across different levels and teams?", type: "rating", options: [] },
+        { text: "How effectively do managers support you in overcoming obstacles in your work?", type: "rating", options: [] },
+        { text: "How regularly do you receive constructive feedback on your performance from your manager?", type: "rating", options: [] },
+        { text: "How often does your manager recognize or appreciate your contributions?", type: "rating", options: [] },
+        { text: "How effectively do managers handle conflicts within their teams?", type: "rating", options: [] },
+        { text: "How confident are you in your manager’s ability to lead the team to success?", type: "rating", options: [] },
+        { text: "How much do you trust leadership to make decisions in the best interest of employees and the business?", type: "rating", options: [] },
+        { text: "How satisfied are you with the availability of your manager for 1:1 discussions?", type: "rating", options: [] },
+        { text: "How comfortable do you feel challenging or questioning decisions made by your manager?", type: "rating", options: [] },
+        { text: "How fairly are promotions and key opportunities influenced by leadership decisions?", type: "rating", options: [] },
+        { text: "What do you appreciate most about management and leadership in this company?", type: "short", options: [] },
+        { text: "What is one thing you would like your leaders or managers to do differently?", type: "short", options: [] },
+        { text: "How would you rate the overall quality of management and leadership in this organization?", type: "rating", options: [] },
+        { text: "How likely are you to stay in this organization because of its leadership?", type: "multiple", options: ["Very likely", "Somewhat likely", "Not sure", "Somewhat unlikely", "Very unlikely"] },
+        { text: "How satisfied are you with leaders’ responsiveness during times of crisis or uncertainty?", type: "rating", options: [] },
+        { text: "How effectively do leaders communicate organizational priorities and changes?", type: "rating", options: [] },
+        { text: "How fairly do you feel accountability is enforced at leadership levels?", type: "rating", options: [] },
+        { text: "Please share any additional comments regarding management and leadership.", type: "short", options: [] }
+    ],
+    "Team Collaboration & Communication": [
+        { text: "How effectively does your immediate team work together to achieve shared goals?", type: "rating", options: [] },
+        { text: "How open and honest is communication within your team?", type: "rating", options: [] },
+        { text: "How comfortable do you feel asking your teammates for help when needed?", type: "rating", options: [] },
+        { text: "How often are important updates shared within the team in a timely manner?", type: "rating", options: [] },
+        { text: "How effectively are responsibilities distributed within the team?", type: "rating", options: [] },
+        { text: "How frequently do you experience miscommunication or confusion about tasks?", type: "rating", options: [] },
+        { text: "How inclusive are team discussions when it comes to considering different opinions?", type: "rating", options: [] },
+        { text: "How well do team members support each other during high-pressure situations?", type: "rating", options: [] },
+        { text: "How effectively does your team resolve disagreements or conflicts?", type: "rating", options: [] },
+        { text: "How clearly are team objectives and priorities communicated to you?", type: "rating", options: [] },
+        { text: "How satisfied are you with the tools and platforms used for team communication?", type: "rating", options: [] },
+        { text: "How effectively do cross-functional teams collaborate on shared projects?", type: "rating", options: [] },
+        { text: "How often do you feel your inputs are heard and considered in team decisions?", type: "rating", options: [] },
+        { text: "How comfortable are you giving constructive feedback to your teammates?", type: "rating", options: [] },
+        { text: "How comfortable are you receiving feedback from your teammates?", type: "rating", options: [] },
+        { text: "How satisfied are you with transparency on progress and blockers within the team?", type: "rating", options: [] },
+        { text: "How often do you participate in regular team meetings or huddles?", type: "multiple", options: ["Daily", "Weekly", "Bi-weekly", "Rarely", "Never"] },
+        { text: "What do you like most about collaboration and communication in your team?", type: "short", options: [] },
+        { text: "What is the biggest challenge in team collaboration that you face?", type: "short", options: [] },
+        { text: "How would you rate your overall satisfaction with team collaboration and communication?", type: "rating", options: [] },
+        { text: "How effectively does your team share knowledge and learnings across members?", type: "rating", options: [] },
+        { text: "How clearly are roles and responsibilities communicated within your team?", type: "rating", options: [] },
+        { text: "How fairly is credit shared among team members for joint work?", type: "rating", options: [] },
+        { text: "How effectively does your team collaborate with external stakeholders (clients, vendors, other teams)?", type: "rating", options: [] },
+        { text: "Please share any additional comments on team collaboration and communication.", type: "short", options: [] }
+    ],
+
+    "Job Role Clarity & Responsibilities": [
+        { text: "How clearly do you understand your primary responsibilities in your role?", type: "rating", options: [] },
+        { text: "How clearly do you understand how your work contributes to team goals?", type: "rating", options: [] },
+        { text: "How clearly do you understand how your work contributes to organizational goals?", type: "rating", options: [] },
+        { text: "How clear are your performance expectations from your manager?", type: "rating", options: [] },
+        { text: "How adequately were your responsibilities explained when you joined or changed roles?", type: "rating", options: [] },
+        { text: "How often do you receive conflicting priorities from different stakeholders?", type: "rating", options: [] },
+        { text: "How often do you perform tasks that you feel are outside your defined role?", type: "rating", options: [] },
+        { text: "How fair do you feel your workload is compared to others in similar roles?", type: "rating", options: [] },
+        { text: "How effectively are changes in your job role or responsibilities communicated?", type: "rating", options: [] },
+        { text: "How confident are you that your role is aligned with your skills and strengths?", type: "rating", options: [] },
+        { text: "How satisfied are you with the level of autonomy you have in your role?", type: "rating", options: [] },
+        { text: "How often do you feel unclear about what your priorities should be?", type: "rating", options: [] },
+        { text: "How clearly are decision-making boundaries defined for your role?", type: "rating", options: [] },
+        { text: "How satisfied are you with the level of documentation available for your processes and tasks?", type: "rating", options: [] },
+        { text: "How often do you receive guidance when you are unsure about your responsibilities?", type: "rating", options: [] },
+        { text: "How well do your current responsibilities match what was communicated during hiring?", type: "rating", options: [] },
+        { text: "What part of your role gives you the most clarity and satisfaction?", type: "short", options: [] },
+        { text: "What part of your role feels most confusing or poorly defined?", type: "short", options: [] },
+        { text: "How would you rate your overall clarity about your job role and responsibilities?", type: "rating", options: [] },
+        { text: "Do you feel your role uses your skills and potential effectively?", type: "multiple", options: ["Yes, very effectively", "Somewhat effectively", "Not sure", "Not very effectively", "Not at all"] },
+        { text: "How satisfied are you with how your responsibilities evolve as the organization changes?", type: "rating", options: [] },
+        { text: "How satisfied are you with the alignment between your role and your long-term career goals?", type: "rating", options: [] },
+        { text: "How satisfied are you with the clarity of handovers and role transitions when they occur?", type: "rating", options: [] },
+        { text: "How satisfied are you with the support you receive when your responsibilities increase?", type: "rating", options: [] },
+        { text: "Please share any additional comments on job role clarity and responsibilities.", type: "short", options: [] }
+    ],
+
+    "Performance Evaluation & Appraisal": [
+        { text: "How clearly are the performance evaluation criteria explained to you?", type: "rating", options: [] },
+        { text: "How fairly do you feel your performance is evaluated?", type: "rating", options: [] },
+        { text: "How transparent is the performance review process in your organization?", type: "rating", options: [] },
+        { text: "How often do you receive formal performance feedback (such as reviews or check-ins)?", type: "rating", options: [] },
+        { text: "How useful is the performance feedback you receive in helping you improve?", type: "rating", options: [] },
+        { text: "How well do your performance ratings reflect your actual contributions?", type: "rating", options: [] },
+        { text: "How fairly are performance expectations set relative to your workload and resources?", type: "rating", options: [] },
+        { text: "How comfortable do you feel discussing your performance rating with your manager?", type: "rating", options: [] },
+        { text: "How satisfied are you with the opportunity to share your self-assessment during reviews?", type: "rating", options: [] },
+        { text: "How fairly do you feel calibration or moderation of ratings is handled across teams?", type: "rating", options: [] },
+        { text: "How satisfied are you with the link between performance and financial rewards?", type: "rating", options: [] },
+        { text: "How satisfied are you with the link between performance and promotions?", type: "rating", options: [] },
+        { text: "How timely are performance reviews conducted according to the stated cycle?", type: "rating", options: [] },
+        { text: "How often do you receive informal feedback outside formal review cycles?", type: "rating", options: [] },
+        { text: "How fair do you feel the process is for underperformance identification and improvement plans?", type: "rating", options: [] },
+        { text: "How fairly are team contributions and collaboration factored into performance assessments?", type: "rating", options: [] },
+        { text: "What aspect of the performance review process works well for you?", type: "short", options: [] },
+        { text: "What aspect of performance evaluation do you find most frustrating or unfair?", type: "short", options: [] },
+        { text: "How would you rate your overall satisfaction with performance evaluation and appraisal?", type: "rating", options: [] },
+        { text: "Do you feel performance evaluation outcomes are influenced by favoritism or bias?", type: "multiple", options: ["Frequently", "Sometimes", "Rarely", "Never", "Not sure"] },
+        { text: "How satisfied are you with the clarity of improvement steps when your performance needs development?", type: "rating", options: [] },
+        { text: "How satisfied are you with the explanation provided if your rating does not match your expectations?", type: "rating", options: [] },
+        { text: "How satisfied are you with the ability to appeal or clarify performance ratings if needed?", type: "rating", options: [] },
+        { text: "How satisfied are you with the balance between quantitative and qualitative aspects in ratings?", type: "rating", options: [] },
+        { text: "Please share any additional comments on performance evaluation and appraisal.", type: "short", options: [] }
+    ],
+
+    "Training & Skill Development": [
+        { text: "How clearly does the organization communicate available training and development opportunities?", type: "rating", options: [] },
+        { text: "How relevant are the training programs offered to your current role?", type: "rating", options: [] },
+        { text: "How relevant are the training programs to your future career aspirations?", type: "rating", options: [] },
+        { text: "How easy is it to enroll in internal or external training programs?", type: "rating", options: [] },
+        { text: "How supportive is your manager in encouraging you to attend trainings?", type: "rating", options: [] },
+        { text: "How satisfied are you with the quality of internal training sessions or workshops?", type: "rating", options: [] },
+        { text: "How satisfied are you with the quality of external training or certification support?", type: "rating", options: [] },
+        { text: "How effectively do training programs help you improve your day-to-day performance?", type: "rating", options: [] },
+        { text: "How satisfied are you with the availability of technical skill development opportunities?", type: "rating", options: [] },
+        { text: "How satisfied are you with the availability of soft-skill or leadership development offerings?", type: "rating", options: [] },
+        { text: "How fairly are training opportunities distributed among employees?", type: "rating", options: [] },
+        { text: "How satisfied are you with the timing and scheduling of trainings relative to your workload?", type: "rating", options: [] },
+        { text: "How often do you get to apply what you learned in training to your role?", type: "rating", options: [] },
+        { text: "How adequately does the organization fund or reimburse job-relevant certifications?", type: "rating", options: [] },
+        { text: "How satisfied are you with the mentorship or coaching support available?", type: "rating", options: [] },
+        { text: "What type of training or development activity has been most valuable for you?", type: "short", options: [] },
+        { text: "What type of training is lacking that would significantly help you perform better?", type: "short", options: [] },
+        { text: "How would you rate your overall satisfaction with training and skill development opportunities?", type: "rating", options: [] },
+        { text: "Do you feel there is a structured development plan for your growth?", type: "multiple", options: ["Yes, clearly defined", "Somewhat defined", "Not clear", "No"] },
+        { text: "How satisfied are you with learning resources such as LMS or internal documentation?", type: "rating", options: [] },
+        { text: "How satisfied are you with knowledge-sharing sessions like brown-bag talks or tech talks?", type: "rating", options: [] },
+        { text: "How satisfied are you with post-training follow-up or reinforcement activities?", type: "rating", options: [] },
+        { text: "How satisfied are you with leadership’s investment in learning and development overall?", type: "rating", options: [] },
+        { text: "How satisfied are you with opportunities to attend external conferences or events?", type: "rating", options: [] },
+        { text: "Please share any additional comments on training and skill development.", type: "short", options: [] }
+    ],
+
+    "Career Growth & Promotion": [
+        { text: "How clearly is the career path or progression framework explained for your role?", type: "rating", options: [] },
+        { text: "How realistic do you feel your chances are for promotion based on performance?", type: "rating", options: [] },
+        { text: "How fair and transparent is the promotion process in your organization?", type: "rating", options: [] },
+        { text: "How satisfied are you with the time it takes for high performers to be promoted?", type: "rating", options: [] },
+        { text: "How fairly are internal opportunities and openings communicated to employees?", type: "rating", options: [] },
+        { text: "How supportive is your manager in discussing your long-term career goals?", type: "rating", options: [] },
+        { text: "How often do you have structured career discussions with your manager?", type: "rating", options: [] },
+        { text: "How satisfied are you with opportunities to move across roles or departments internally?", type: "rating", options: [] },
+        { text: "How fairly are promotions decided relative to performance versus tenure?", type: "rating", options: [] },
+        { text: "How satisfied are you with visibility into criteria for moving to the next level?", type: "rating", options: [] },
+        { text: "How satisfied are you with the input you get on what you must improve to progress?", type: "rating", options: [] },
+        { text: "How much do promotions and growth decisions feel free from favoritism or bias?", type: "rating", options: [] },
+        { text: "How adequately does the organization recognize and promote technical experts who do not want people-management roles?", type: "rating", options: [] },
+        { text: "How adequately does the organization support lateral growth into new skills or domains?", type: "rating", options: [] },
+        { text: "How satisfied are you with your current growth rate in this organization?", type: "rating", options: [] },
+        { text: "What aspect of career growth in this organization works well for you?", type: "short", options: [] },
+        { text: "What is the biggest barrier to your career growth here?", type: "short", options: [] },
+        { text: "How would you rate your overall satisfaction with career growth and promotion opportunities?", type: "rating", options: [] },
+        { text: "If you left this organization, how likely is career growth to be a primary reason?", type: "multiple", options: ["Very likely", "Somewhat likely", "Not sure", "Somewhat unlikely", "Very unlikely"] },
+        { text: "How satisfied are you with leadership’s visibility into your contributions and potential?", type: "rating", options: [] },
+        { text: "How satisfied are you with internal job posting and application processes?", type: "rating", options: [] },
+        { text: "How satisfied are you with role transitions when you are promoted or moved?", type: "rating", options: [] },
+        { text: "How satisfied are you with succession planning or leadership pipeline practices?", type: "rating", options: [] },
+        { text: "How satisfied are you with clarity about long-term opportunities within the organization?", type: "rating", options: [] },
+        { text: "Please share any additional comments on career growth and promotion.", type: "short", options: [] }
+    ],
+
+    "Compensation & Benefits": [
+        { text: "How satisfied are you with your base salary relative to your responsibilities?", type: "rating", options: [] },
+        { text: "How satisfied are you with your total compensation compared to market standards as you understand them?", type: "rating", options: [] },
+        { text: "How clearly are the components of your compensation package explained to you?", type: "rating", options: [] },
+        { text: "How fairly do you feel compensation differences are managed across similar roles?", type: "rating", options: [] },
+        { text: "How satisfied are you with the fairness of annual increments or adjustments?", type: "rating", options: [] },
+        { text: "How satisfied are you with the structure and payout of bonuses or incentives, if applicable?", type: "rating", options: [] },
+        { text: "How adequate are health insurance or medical benefits provided by the organization?", type: "rating", options: [] },
+        { text: "How satisfied are you with leave policies such as sick leave and earned leave?", type: "rating", options: [] },
+        { text: "How satisfied are you with retirement or long-term financial benefits, where applicable?", type: "rating", options: [] },
+        { text: "How satisfied are you with non-monetary benefits such as food, transport, and wellness?", type: "rating", options: [] },
+        { text: "How transparent is the organization about how compensation decisions are made?", type: "rating", options: [] },
+        { text: "How satisfied are you with compensation adjustments when role scope increases significantly?", type: "rating", options: [] },
+        { text: "How fairly are pay corrections or discrepancies handled when raised?", type: "rating", options: [] },
+        { text: "How satisfied are you with support for tax planning or related information?", type: "rating", options: [] },
+        { text: "How satisfied are you with reimbursement processes for approved expenses?", type: "rating", options: [] },
+        { text: "What aspect of your compensation and benefits package do you value the most?", type: "short", options: [] },
+        { text: "What compensation or benefit change would most improve your satisfaction?", type: "short", options: [] },
+        { text: "How would you rate your overall satisfaction with compensation and benefits?", type: "rating", options: [] },
+        { text: "If you considered leaving, how likely would compensation be a primary reason?", type: "multiple", options: ["Very likely", "Somewhat likely", "Not sure", "Somewhat unlikely", "Very unlikely"] },
+        { text: "How satisfied are you with fairness of pay between new hires and existing employees in similar roles?", type: "rating", options: [] },
+        { text: "How satisfied are you with the organization’s approach to pay for performance?", type: "rating", options: [] },
+        { text: "How satisfied are you with benefits that support your family or dependents?", type: "rating", options: [] },
+        { text: "How satisfied are you with perks that support your physical and mental wellbeing?", type: "rating", options: [] },
+        { text: "How satisfied are you with communication before and after major compensation changes?", type: "rating", options: [] },
+        { text: "Please share any additional comments on compensation and benefits.", type: "short", options: [] }
+    ],
+
+    "Work-Life Balance": [
+        { text: "How reasonable are your typical working hours on most days?", type: "rating", options: [] },
+        { text: "How often do you need to work beyond your regular hours to meet expectations?", type: "rating", options: [] },
+        { text: "How easy is it to disconnect from work during your personal time?", type: "rating", options: [] },
+        { text: "How comfortable do you feel declining work outside normal hours when it is not urgent?", type: "rating", options: [] },
+        { text: "How supportive is your manager of your personal and family commitments?", type: "rating", options: [] },
+        { text: "How often do last-minute requests disrupt your personal plans?", type: "rating", options: [] },
+        { text: "How satisfied are you with flexibility in managing your working hours when needed?", type: "rating", options: [] },
+        { text: "How frequently do you feel emotionally or mentally exhausted because of work?", type: "rating", options: [] },
+        { text: "How often do you feel you have enough time to manage personal responsibilities?", type: "rating", options: [] },
+        { text: "How satisfied are you with support for parental or caregiver responsibilities, if applicable?", type: "rating", options: [] },
+        { text: "How satisfied are you with the organization’s approach to vacation and time off?", type: "rating", options: [] },
+        { text: "How often do you feel pressured to respond to messages outside of working hours?", type: "rating", options: [] },
+        { text: "How fairly does the organization balance urgent business needs with employee wellbeing?", type: "rating", options: [] },
+        { text: "How often do you experience guilt or fear of judgment when taking leave?", type: "rating", options: [] },
+        { text: "How satisfied are you with initiatives aimed at reducing burnout?", type: "rating", options: [] },
+        { text: "What helps you the most in maintaining a healthy work-life balance here?", type: "short", options: [] },
+        { text: "What is the biggest obstacle to achieving a healthy work-life balance in your role?", type: "short", options: [] },
+        { text: "How would you rate your overall work-life balance in this organization?", type: "rating", options: [] },
+        { text: "If you considered leaving, how likely would work-life balance be a major factor?", type: "multiple", options: ["Very likely", "Somewhat likely", "Not sure", "Somewhat unlikely", "Very unlikely"] },
+        { text: "How satisfied are you with flexibility for attending to health appointments or emergencies?", type: "rating", options: [] },
+        { text: "How satisfied are you with clear boundaries set by leadership around working hours?", type: "rating", options: [] },
+        { text: "How satisfied are you with support for part-time, reduced hours, or flexible roles if needed?", type: "rating", options: [] },
+        { text: "How satisfied are you with the predictability of your weekly work schedule?", type: "rating", options: [] },
+        { text: "How satisfied are you with support for taking extended breaks such as sabbaticals, if applicable?", type: "rating", options: [] },
+        { text: "Please share any additional comments on work-life balance.", type: "short", options: [] }
+    ],
+
+    "Employee Engagement & Motivation": [
+        { text: "How enthusiastic are you about your work on most days?", type: "rating", options: [] },
+        { text: "How often do you feel proud to tell others that you work for this organization?", type: "rating", options: [] },
+        { text: "How connected do you feel to the mission and purpose of the company?", type: "rating", options: [] },
+        { text: "How motivated are you to go above and beyond in your current role?", type: "rating", options: [] },
+        { text: "How often do you feel that your work is meaningful and makes a difference?", type: "rating", options: [] },
+        { text: "How satisfied are you with the recognition you receive for your contributions?", type: "rating", options: [] },
+        { text: "How likely are you to look for opportunities to improve processes or outcomes?", type: "rating", options: [] },
+        { text: "How valued do you feel as an employee in this organization?", type: "rating", options: [] },
+        { text: "How often do you feel your suggestions for improvement are heard and considered?", type: "rating", options: [] },
+        { text: "How often do you feel energized rather than drained at the end of a workday?", type: "rating", options: [] },
+        { text: "How satisfied are you with the variety and challenge level of the work you do?", type: "rating", options: [] },
+        { text: "How likely are you to still be working here in the next two years?", type: "rating", options: [] },
+        { text: "How well does your current role align with what you enjoy doing professionally?", type: "rating", options: [] },
+        { text: "How supported do you feel in taking initiative without fear of negative consequences?", type: "rating", options: [] },
+        { text: "How satisfied are you with opportunities to contribute ideas beyond your core role?", type: "rating", options: [] },
+        { text: "What motivates you the most to perform well in this organization?", type: "short", options: [] },
+        { text: "What factors reduce your motivation or engagement at work?", type: "short", options: [] },
+        { text: "How would you rate your overall engagement level with your work and the organization?", type: "rating", options: [] },
+        { text: "If a friend asked, how likely are you to recommend this company as a great place to work?", type: "multiple", options: ["Very likely", "Likely", "Neutral", "Unlikely", "Very unlikely"] },
+        { text: "How satisfied are you with the frequency of engagement surveys and follow-up actions?", type: "rating", options: [] },
+        { text: "How satisfied are you with celebrations of wins and milestones within the organization?", type: "rating", options: [] },
+        { text: "How satisfied are you with initiatives that support employee wellbeing and happiness?", type: "rating", options: [] },
+        { text: "How satisfied are you with the overall energy and morale in your team?", type: "rating", options: [] },
+        { text: "How satisfied are you with opportunities to give feedback anonymously when needed?", type: "rating", options: [] },
+        { text: "Please share any additional comments on employee engagement and motivation.", type: "short", options: [] }
+    ],
+
+    "HR Policies & Support": [
+        { text: "How clearly are HR policies explained to you, including leave and code of conduct?", type: "rating", options: [] },
+        { text: "How easy is it to access HR policies when you need to refer to them?", type: "rating", options: [] },
+        { text: "How straightforward are HR processes like onboarding, exit, and role changes?", type: "rating", options: [] },
+        { text: "How responsive is the HR team when you reach out with queries or issues?", type: "rating", options: [] },
+        { text: "How satisfied are you with the fairness and consistency of HR policies across employees?", type: "rating", options: [] },
+        { text: "How comfortable do you feel approaching HR with sensitive concerns?", type: "rating", options: [] },
+        { text: "How satisfied are you with HR support during life events such as medical or relocation needs?", type: "rating", options: [] },
+        { text: "How adequately does HR communicate changes in policies and procedures?", type: "rating", options: [] },
+        { text: "How satisfied are you with the transparency of HR-related decisions such as transfers?", type: "rating", options: [] },
+        { text: "How satisfied are you with the onboarding process when you joined the organization?", type: "rating", options: [] },
+        { text: "How satisfied are you with the support provided to new joiners by HR?", type: "rating", options: [] },
+        { text: "How satisfied are you with exit process clarity and fairness, if you have observed it?", type: "rating", options: [] },
+        { text: "How fairly are policy exceptions considered when employees have genuine constraints?", type: "rating", options: [] },
+        { text: "How effectively does HR ensure a safe and respectful workplace environment?", type: "rating", options: [] },
+        { text: "How satisfied are you with HR’s involvement in employee engagement initiatives?", type: "rating", options: [] },
+        { text: "What aspect of HR policies or support works best for you?", type: "short", options: [] },
+        { text: "What HR policy or process improvement would have the biggest positive impact for you?", type: "short", options: [] },
+        { text: "How would you rate your overall satisfaction with HR policies and support?", type: "rating", options: [] },
+        { text: "Do you feel HR acts as a neutral and trustworthy function in the organization?", type: "multiple", options: ["Always", "Most of the time", "Sometimes", "Rarely", "Never"] },
+        { text: "How satisfied are you with the clarity of grievance and disciplinary policies shared by HR?", type: "rating", options: [] },
+        { text: "How satisfied are you with HR’s role in fostering fair and merit-based practices?", type: "rating", options: [] },
+        { text: "How satisfied are you with digital HR systems or portals used for policy and support?", type: "rating", options: [] },
+        { text: "How satisfied are you with HR communications around legal or compliance requirements?", type: "rating", options: [] },
+        { text: "How satisfied are you with HR’s visibility and accessibility in day-to-day operations?", type: "rating", options: [] },
+        { text: "Please share any additional comments on HR policies and support.", type: "short", options: [] }
+    ],
+
+    "Infrastructure & Office Facilities": [
+        { text: "How satisfied are you with the quality and comfort of your workstation?", type: "rating", options: [] },
+        { text: "How satisfied are you with lighting and ventilation in your office area?", type: "rating", options: [] },
+        { text: "How satisfied are you with cleanliness and housekeeping in office spaces?", type: "rating", options: [] },
+        { text: "How satisfied are you with the availability and cleanliness of restrooms?", type: "rating", options: [] },
+        { text: "How satisfied are you with pantry or kitchen facilities such as water and beverages?", type: "rating", options: [] },
+        { text: "How satisfied are you with meeting rooms in terms of availability and condition?", type: "rating", options: [] },
+        { text: "How satisfied are you with audio-visual facilities in meeting and conference rooms?", type: "rating", options: [] },
+        { text: "How satisfied are you with the availability of quiet spaces for focused work or calls?", type: "rating", options: [] },
+        { text: "How satisfied are you with common areas such as lobbies and collaboration spaces?", type: "rating", options: [] },
+        { text: "How satisfied are you with seating arrangements relative to noise and privacy?", type: "rating", options: [] },
+        { text: "How satisfied are you with availability of lockers or secure storage if needed?", type: "rating", options: [] },
+        { text: "How satisfied are you with parking facilities in terms of availability and safety?", type: "rating", options: [] },
+        { text: "How satisfied are you with building access, entry systems, and reception support?", type: "rating", options: [] },
+        { text: "How satisfied are you with maintenance response when facilities issues are reported?", type: "rating", options: [] },
+        { text: "How satisfied are you with safety signage, emergency exits, and evacuation plans?", type: "rating", options: [] },
+        { text: "What do you like most about the office infrastructure and facilities?", type: "short", options: [] },
+        { text: "What infrastructure issue do you encounter most frequently in the office?", type: "short", options: [] },
+        { text: "How would you rate your overall satisfaction with office infrastructure and facilities?", type: "rating", options: [] },
+        { text: "How modern and up-to-date do you feel the office facilities are?", type: "multiple", options: ["Very modern", "Fairly modern", "Adequate", "Somewhat outdated", "Very outdated"] },
+        { text: "How satisfied are you with accessibility features for differently abled employees?", type: "rating", options: [] },
+        { text: "How satisfied are you with temperature control such as AC and heating across spaces?", type: "rating", options: [] },
+        { text: "How satisfied are you with noise levels and sound privacy in your work area?", type: "rating", options: [] },
+        { text: "How satisfied are you with availability of secure visitor management and access control?", type: "rating", options: [] },
+        { text: "How satisfied are you with outdoor or relaxation spaces if they are available?", type: "rating", options: [] },
+        { text: "Please share any additional comments on infrastructure and office facilities.", type: "short", options: [] }
+    ],
+
+    "IT Systems & Digital Tools": [
+        { text: "How satisfied are you with the performance and reliability of your work devices?", type: "rating", options: [] },
+        { text: "How satisfied are you with the availability of required software and licenses for your role?", type: "rating", options: [] },
+        { text: "How satisfied are you with network and VPN reliability when working from office or remotely?", type: "rating", options: [] },
+        { text: "How satisfied are you with email, messaging, and collaboration tools provided?", type: "rating", options: [] },
+        { text: "How satisfied are you with issue resolution time when you raise IT support tickets?", type: "rating", options: [] },
+        { text: "How satisfied are you with the self-service options such as knowledge base or FAQs for IT issues?", type: "rating", options: [] },
+        { text: "How satisfied are you with cybersecurity practices that balance security and usability?", type: "rating", options: [] },
+        { text: "How frequently do system outages or tool failures significantly impact your work?", type: "rating", options: [] },
+        { text: "How satisfied are you with the integration between different tools you use daily?", type: "rating", options: [] },
+        { text: "How intuitive and user-friendly do you find the main internal systems you use?", type: "rating", options: [] },
+        { text: "How satisfied are you with onboarding support to help you learn necessary tools quickly?", type: "rating", options: [] },
+        { text: "How satisfied are you with access controls and permissions for tools you require?", type: "rating", options: [] },
+        { text: "How satisfied are you with the speed at which new tools or upgrades are rolled out?", type: "rating", options: [] },
+        { text: "How satisfied are you with communication regarding planned downtime or system changes?", type: "rating", options: [] },
+        { text: "How confident are you that your work data is securely backed up and protected?", type: "rating", options: [] },
+        { text: "What digital tool or system is most critical to your productivity?", type: "short", options: [] },
+        { text: "Which IT or tool-related issue slows you down the most?", type: "short", options: [] },
+        { text: "How would you rate your overall satisfaction with IT systems and digital tools?", type: "rating", options: [] },
+        { text: "How satisfied are you with training or guidance on using new tools effectively?", type: "rating", options: [] },
+        { text: "How satisfied are you with mobile accessibility of key tools where relevant?", type: "rating", options: [] },
+        { text: "How satisfied are you with IT support availability during your working schedule?", type: "rating", options: [] },
+        { text: "How satisfied are you with response quality from IT when issues are escalated?", type: "rating", options: [] },
+        { text: "How satisfied are you with the process of requesting access to new tools or systems?", type: "rating", options: [] },
+        { text: "How satisfied are you with license and tool provisioning when your role changes?", type: "rating", options: [] },
+        { text: "Please share any additional comments on IT systems and digital tools.", type: "short", options: [] }
+    ],
+
+    "Workplace Safety & Compliance": [
+        { text: "How aware are you of workplace safety policies and procedures in your organization?", type: "rating", options: [] },
+        { text: "How clearly are safety guidelines communicated and reinforced?", type: "rating", options: [] },
+        { text: "How satisfied are you with physical safety measures such as fire safety and exits?", type: "rating", options: [] },
+        { text: "How satisfied are you with ergonomic and health-related provisions at your workstation?", type: "rating", options: [] },
+        { text: "How safe do you feel from physical hazards in your workplace environment?", type: "rating", options: [] },
+        { text: "How safe do you feel from psychological hazards such as bullying or harassment?", type: "rating", options: [] },
+        { text: "How satisfied are you with training or drills related to emergency procedures?", type: "rating", options: [] },
+        { text: "How comfortable are you reporting safety or compliance concerns?", type: "rating", options: [] },
+        { text: "How quickly are safety incidents addressed once reported?", type: "rating", options: [] },
+        { text: "How satisfied are you with compliance regarding legal and regulatory requirements in your area of work?", type: "rating", options: [] },
+        { text: "How satisfied are you with communication about new or updated compliance requirements?", type: "rating", options: [] },
+        { text: "How often do you feel pressured to bypass safety or compliance steps to meet deadlines?", type: "rating", options: [] },
+        { text: "How satisfied are you with personal protective equipment or safety tools where needed?", type: "rating", options: [] },
+        { text: "How satisfied are you with investigation and follow-up on safety incidents?", type: "rating", options: [] },
+        { text: "How confident are you that the organization would support you if you refused unsafe work?", type: "rating", options: [] },
+        { text: "What aspects of workplace safety and compliance are working well?", type: "short", options: [] },
+        { text: "What is the most important safety or compliance improvement needed in your view?", type: "short", options: [] },
+        { text: "How would you rate your overall sense of safety and compliance at work?", type: "rating", options: [] },
+        { text: "How satisfied are you with ergonomics or health and safety assessments conducted?", type: "rating", options: [] },
+        { text: "How satisfied are you with confidentiality in investigations of safety or compliance issues?", type: "rating", options: [] },
+        { text: "How satisfied are you with support provided to employees affected by workplace incidents?", type: "rating", options: [] },
+        { text: "How satisfied are you with mechanisms to report compliance violations anonymously?", type: "rating", options: [] },
+        { text: "How satisfied are you with management’s visible commitment to safety and compliance?", type: "rating", options: [] },
+        { text: "How satisfied are you with training on data protection and privacy compliance where relevant?", type: "rating", options: [] },
+        { text: "Please share any additional comments on workplace safety and compliance.", type: "short", options: [] }
+    ],
+
+    "Diversity, Equity & Inclusion": [
+        { text: "How respectful is the workplace towards employees of different genders, backgrounds, and identities?", type: "rating", options: [] },
+        { text: "How inclusive do team discussions and decisions feel for people with diverse viewpoints?", type: "rating", options: [] },
+        { text: "How comfortable do you feel being yourself at work without fear of judgment?", type: "rating", options: [] },
+        { text: "How fairly are hiring and promotion decisions made with respect to diversity and equal opportunity?", type: "rating", options: [] },
+        { text: "How satisfied are you with leadership’s visible commitment to diversity and inclusion?", type: "rating", options: [] },
+        { text: "How satisfied are you with policies that prevent discrimination and harassment?", type: "rating", options: [] },
+        { text: "How satisfied are you with the handling of incidents related to bias or discrimination when reported?", type: "rating", options: [] },
+        { text: "How inclusive are company events and communications of different cultures and backgrounds?", type: "rating", options: [] },
+        { text: "How satisfied are you with representation of diverse groups in leadership roles?", type: "rating", options: [] },
+        { text: "How satisfied are you with accommodation of special needs or disabilities at work?", type: "rating", options: [] },
+        { text: "How satisfied are you with language inclusivity in meetings and documentation?", type: "rating", options: [] },
+        { text: "How satisfied are you with training or awareness programs about inclusion and unconscious bias?", type: "rating", options: [] },
+        { text: "How often do you witness microaggressions or subtle discriminatory behavior at work?", type: "rating", options: [] },
+        { text: "How comfortable are you calling out inappropriate jokes or comments if you hear them?", type: "rating", options: [] },
+        { text: "How fairly are flexible policies applied to people in different personal situations?", type: "rating", options: [] },
+        { text: "What does the organization do well in terms of diversity, equity, and inclusion?", type: "short", options: [] },
+        { text: "What is one concrete step that would improve inclusiveness at your workplace?", type: "short", options: [] },
+        { text: "How would you rate your overall satisfaction with diversity, equity, and inclusion in this organization?", type: "rating", options: [] },
+        { text: "Do you feel you have equal opportunity to grow regardless of personal background?", type: "multiple", options: ["Always", "Most of the time", "Sometimes", "Rarely", "Never"] },
+        { text: "How satisfied are you with respect shown for religious or cultural practices where relevant?", type: "rating", options: [] },
+        { text: "How satisfied are you with gender sensitivity in policies and everyday interactions?", type: "rating", options: [] },
+        { text: "How satisfied are you with inclusion of remote or hybrid employees in team culture?", type: "rating", options: [] },
+        { text: "How satisfied are you with inclusive use of benefits, programs, and perks?", type: "rating", options: [] },
+        { text: "How satisfied are you with safe spaces to raise concerns about bias or exclusion?", type: "rating", options: [] },
+        { text: "Please share any additional comments on diversity, equity, and inclusion.", type: "short", options: [] }
+    ],
+
+    "Grievance Handling & Ethics": [
+        { text: "How aware are you of the process to raise a formal grievance or complaint?", type: "rating", options: [] },
+        { text: "How easy is it to access information about grievance and ethics policies?", type: "rating", options: [] },
+        { text: "How comfortable do you feel using formal channels to raise a concern?", type: "rating", options: [] },
+        { text: "How confident are you that your grievance will be taken seriously and investigated fairly?", type: "rating", options: [] },
+        { text: "How satisfied are you with the confidentiality of the grievance process?", type: "rating", options: [] },
+        { text: "How satisfied are you with the timeliness of responses to grievances?", type: "rating", options: [] },
+        { text: "How satisfied are you with communication about the progress of your grievance if you raised one?", type: "rating", options: [] },
+        { text: "How satisfied are you with the outcome of grievance investigations you are aware of?", type: "rating", options: [] },
+        { text: "How safe do you feel from retaliation if you report unethical behavior or misconduct?", type: "rating", options: [] },
+        { text: "How visible is the organization’s commitment to ethics in decision-making?", type: "rating", options: [] },
+        { text: "How satisfied are you with clarity of what constitutes misconduct or policy violation?", type: "rating", options: [] },
+        { text: "How satisfied are you with training or communication on ethics and code of conduct?", type: "rating", options: [] },
+        { text: "How fairly do you feel similar grievances are handled for employees at different levels?", type: "rating", options: [] },
+        { text: "How often have you chosen not to report an issue due to fear or lack of trust?", type: "rating", options: [] },
+        { text: "How satisfied are you with anonymous reporting mechanisms, if available?", type: "rating", options: [] },
+        { text: "What aspect of grievance handling or ethics management works well in this organization?", type: "short", options: [] },
+        { text: "What change would significantly increase your trust in grievance and ethics processes?", type: "short", options: [] },
+        { text: "How would you rate your overall satisfaction with grievance handling and ethics practices?", type: "rating", options: [] },
+        { text: "Do you feel leaders are held accountable when they violate ethical expectations?", type: "multiple", options: ["Always", "Most of the time", "Sometimes", "Rarely", "Never"] },
+        { text: "How satisfied are you with follow-through on actions promised after investigations?", type: "rating", options: [] },
+        { text: "How satisfied are you with clarity of anti-retaliation provisions?", type: "rating", options: [] },
+        { text: "How satisfied are you with awareness of whistleblower protections where applicable?", type: "rating", options: [] },
+        { text: "How satisfied are you with the independence of committees or individuals handling grievances?", type: "rating", options: [] },
+        { text: "How satisfied are you with how ethical dilemmas are discussed or addressed in your workplace?", type: "rating", options: [] },
+        { text: "Please share any additional comments on grievance handling and ethics.", type: "short", options: [] }
+    ],
+
+    "Internal Communication & Transparency": [
+        { text: "How clear and understandable are major announcements from leadership?", type: "rating", options: [] },
+        { text: "How timely is communication about organizational changes that affect you?", type: "rating", options: [] },
+        { text: "How effectively are company goals and priorities communicated to all employees?", type: "rating", options: [] },
+        { text: "How satisfied are you with communication about strategic decisions and their rationale?", type: "rating", options: [] },
+        { text: "How satisfied are you with the availability of town halls, Q&A forums, or all-hands meetings?", type: "rating", options: [] },
+        { text: "How comfortable do you feel asking questions during organization-wide communication forums?", type: "rating", options: [] },
+        { text: "How satisfied are you with communication channels for sharing updates, such as email or intranet?", type: "rating", options: [] },
+        { text: "How often do you receive duplicate or overwhelming communication that is hard to manage?", type: "rating", options: [] },
+        { text: "How satisfied are you with transparency around business performance and results?", type: "rating", options: [] },
+        { text: "How satisfied are you with communication regarding changes in policies or processes?", type: "rating", options: [] },
+        { text: "How satisfied are you with upward communication, such as feedback from employees to leadership?", type: "rating", options: [] },
+        { text: "How satisfied are you with cross-team communication about shared work or dependencies?", type: "rating", options: [] },
+        { text: "How often do you feel caught off guard by changes that were not well communicated?", type: "rating", options: [] },
+        { text: "How satisfied are you with the frequency of updates about organizational priorities?", type: "rating", options: [] },
+        { text: "How satisfied are you with clarity of internal communications during crises or unexpected events?", type: "rating", options: [] },
+        { text: "What internal communication practice do you find most effective?", type: "short", options: [] },
+        { text: "What communication gap causes you the most difficulty in your work?", type: "short", options: [] },
+        { text: "How would you rate your overall satisfaction with internal communication and transparency?", type: "rating", options: [] },
+        { text: "Do you feel leadership is honest and open when sharing both positive and negative news?", type: "multiple", options: ["Always", "Often", "Sometimes", "Rarely", "Never"] },
+        { text: "How satisfied are you with clarity regarding who is responsible for what decisions?", type: "rating", options: [] },
+        { text: "How satisfied are you with information shared ahead of organizational restructuring or changes?", type: "rating", options: [] },
+        { text: "How satisfied are you with the use of data and facts in internal communication rather than rumors?", type: "rating", options: [] },
+        { text: "How satisfied are you with the ease of finding past announcements or documents when needed?", type: "rating", options: [] },
+        { text: "Please share any additional comments on internal communication and transparency.", type: "short", options: [] }
+    ],
+
+    "Innovation & Process Improvement": [
+        { text: "How encouraged do you feel to suggest new ideas or improvements in your work area?", type: "rating", options: [] },
+        { text: "How easy is it to share innovative ideas or suggestions with relevant stakeholders?", type: "rating", options: [] },
+        { text: "How satisfied are you with acknowledgment or recognition when you propose valuable ideas?", type: "rating", options: [] },
+        { text: "How often do you see employee suggestions being implemented as real changes?", type: "rating", options: [] },
+        { text: "How satisfied are you with the organization’s openness to experimenting with new approaches?", type: "rating", options: [] },
+        { text: "How satisfied are you with the support such as time or tools provided to work on process improvements?", type: "rating", options: [] },
+        { text: "How satisfied are you with cross-functional collaboration on innovation initiatives?", type: "rating", options: [] },
+        { text: "How satisfied are you with leadership communication about innovation priorities?", type: "rating", options: [] },
+        { text: "How often are outdated processes reviewed and updated in your area?", type: "rating", options: [] },
+        { text: "How satisfied are you with automation or tooling efforts to reduce manual work?", type: "rating", options: [] },
+        { text: "How satisfied are you with opportunities to participate in innovation programs or hackathons?", type: "rating", options: [] },
+        { text: "How satisfied are you with metrics used to measure success of process improvements?", type: "rating", options: [] },
+        { text: "How often do you feel blocked by bureaucracy when trying to improve processes?", type: "rating", options: [] },
+        { text: "How satisfied are you with documentation and communication when processes change?", type: "rating", options: [] },
+        { text: "How satisfied are you with learning from past projects or failures to improve future work?", type: "rating", options: [] },
+        { text: "What helps you most in being innovative or improving your work processes?", type: "short", options: [] },
+        { text: "What is the biggest barrier to innovation or process improvement in your experience?", type: "short", options: [] },
+        { text: "How would you rate your overall satisfaction with innovation and process improvement culture?", type: "rating", options: [] },
+        { text: "Do you feel innovation is recognized and rewarded adequately in this organization?", type: "multiple", options: ["Always", "Often", "Sometimes", "Rarely", "Never"] },
+        { text: "How satisfied are you with leadership support for experimentation and taking calculated risks?", type: "rating", options: [] },
+        { text: "How satisfied are you with the pace at which improvements are rolled out once approved?", type: "rating", options: [] },
+        { text: "How satisfied are you with involvement of employees in designing new processes or tools?", type: "rating", options: [] },
+        { text: "How satisfied are you with feedback loops that check if new processes actually work?", type: "rating", options: [] },
+        { text: "How satisfied are you with sharing of success stories about innovation within the company?", type: "rating", options: [] },
+        { text: "Please share any additional comments on innovation and process improvement.", type: "short", options: [] }
+    ],
+
+    "Remote / Hybrid Work Support": [
+        { text: "How clearly are remote or hybrid work policies defined and communicated?", type: "rating", options: [] },
+        { text: "How fair and consistent are remote or hybrid work arrangements across employees?", type: "rating", options: [] },
+        { text: "How adequate is the IT and tool support you receive for working remotely?", type: "rating", options: [] },
+        { text: "How comfortable is your remote work setup in terms of ergonomics and environment?", type: "rating", options: [] },
+        { text: "How effectively does your team collaborate when members work remotely or in hybrid mode?", type: "rating", options: [] },
+        { text: "How satisfied are you with meeting norms and practices for remote participants?", type: "rating", options: [] },
+        { text: "How satisfied are you with leadership’s understanding of remote work challenges?", type: "rating", options: [] },
+        { text: "How satisfied are you with flexibility in choosing remote versus office days where applicable?", type: "rating", options: [] },
+        { text: "How often do you face connectivity or technology issues that affect remote work?", type: "rating", options: [] },
+        { text: "How fairly are performance and visibility handled for remote versus in-office employees?", type: "rating", options: [] },
+        { text: "How satisfied are you with support for maintaining boundaries while working remotely?", type: "rating", options: [] },
+        { text: "How satisfied are you with communication on expectations for availability during remote work days?", type: "rating", options: [] },
+        { text: "How often do you feel isolated or disconnected when working remotely?", type: "rating", options: [] },
+        { text: "How satisfied are you with virtual engagement activities for remote or hybrid workers?", type: "rating", options: [] },
+        { text: "How satisfied are you with support related to home office setup or reimbursement where applicable?", type: "rating", options: [] },
+        { text: "What works best for you about the current remote or hybrid work arrangements?", type: "short", options: [] },
+        { text: "What is the biggest challenge you face with remote or hybrid work?", type: "short", options: [] },
+        { text: "How would you rate your overall satisfaction with remote or hybrid work support?", type: "rating", options: [] },
+        { text: "Do you feel you have enough control over where you work based on your role?", type: "multiple", options: ["Yes, always", "Mostly", "Sometimes", "Rarely", "Never"] },
+        { text: "How satisfied are you with guidelines for data security and privacy while working remotely?", type: "rating", options: [] },
+        { text: "How satisfied are you with efforts to ensure equal participation of remote employees in meetings?", type: "rating", options: [] },
+        { text: "How satisfied are you with manager check-ins and support while working remotely?", type: "rating", options: [] },
+        { text: "How satisfied are you with clarity on when presence in office is mandatory versus optional?", type: "rating", options: [] },
+        { text: "How satisfied are you with the balance between remote flexibility and team bonding needs?", type: "rating", options: [] },
+        { text: "Please share any additional comments on remote or hybrid work support.", type: "short", options: [] }
+    ],
+
+    "Overall Employee Experience": [
+        { text: "How satisfied are you overall with your experience as an employee in this organization?", type: "rating", options: [] },
+        { text: "How satisfied are you with your day-to-day work experience over the last three months?", type: "rating", options: [] },
+        { text: "How satisfied are you with the balance between what you give and what you receive at work?", type: "rating", options: [] },
+        { text: "How satisfied are you with your relationships with colleagues and teammates?", type: "rating", options: [] },
+        { text: "How satisfied are you with your relationship and interactions with your manager?", type: "rating", options: [] },
+        { text: "How satisfied are you with growth opportunities and learning in this organization overall?", type: "rating", options: [] },
+        { text: "How satisfied are you with your sense of impact and contribution at work?", type: "rating", options: [] },
+        { text: "How satisfied are you with the fairness and equity you experience at work overall?", type: "rating", options: [] },
+        { text: "How satisfied are you with the physical and digital environment that supports your work?", type: "rating", options: [] },
+        { text: "How satisfied are you with how the organization handled major changes in the recent past?", type: "rating", options: [] },
+        { text: "How satisfied are you with feeling valued and recognized as an individual at work?", type: "rating", options: [] },
+        { text: "How likely are you to recommend this organization as a great place to work to others?", type: "rating", options: [] },
+        { text: "How likely are you to stay with this organization for the next two years?", type: "rating", options: [] },
+        { text: "If you were to leave, how likely is it that the reason would be related to your overall experience here?", type: "rating", options: [] },
+        { text: "What has been the most positive part of your employee experience so far?", type: "short", options: [] },
+        { text: "What has been the most challenging or negative part of your employee experience?", type: "short", options: [] },
+        { text: "Do you feel proud to be associated with this organization?", type: "multiple", options: ["Always", "Often", "Sometimes", "Rarely", "Never"] },
+        { text: "How satisfied are you with how the organization listens to employees and acts on feedback?", type: "rating", options: [] },
+        { text: "How satisfied are you with how well your expectations matched the reality of working here?", type: "rating", options: [] },
+        { text: "How satisfied are you with the organization’s reputation and brand as an employer?", type: "rating", options: [] },
+        { text: "How would you rate the impact of this job on your overall life satisfaction?", type: "rating", options: [] },
+        { text: "How satisfied are you with support you receive during personal or professional transitions?", type: "rating", options: [] },
+        { text: "How satisfied are you with opportunities to shape the future direction of the organization?", type: "rating", options: [] },
+        { text: "How satisfied are you with the overall culture of feedback and continuous improvement?", type: "rating", options: [] },
+        { text: "Please share any additional comments about your overall employee experience.", type: "short", options: [] }
+    ]
+};
+
+// Generic fallback if some facility name is not in the bank
+const genericDefaultQuestionsTemplate = [
+    { text: "Overall, how would you rate this corporate facility or function?", type: "rating", options: [] },
+    { text: "What do you appreciate most about this area?", type: "short", options: [] },
+    { text: "What improvements would you suggest for this area?", type: "short", options: [] }
+];
+
+// ---------------- FORM STATE ----------------
+let formState = {
+    id: null,
+    domain: "corporate",
+    name: "Untitled Corporate Form",
+    services: [],
+    overallRating: 0,
+    ratingReason: ""
+};
+
+// ------------- INIT BUILDER (MIRROR COLLEGE) -------------
+async function initBuilder() {
+    if (templateIdFromUrl) {
+        try {
+            const res = await fetch("https://web-production-315e.up.railway.app/load-form-template?id=" + templateIdFromUrl);
+            if (res.ok) {
+                const loaded = await res.json();
+                formState = loaded;
+                if (!formState.domain) formState.domain = "corporate";
+            }
+        } catch (e) {
+            console.warn("Could not load corporate template by id:", e);
+        }
+    } else {
+        if (!config || !config.services || config.services.length === 0) {
+            servicesContainer.innerHTML = "<p class='subtext'>No facilities selected. Please go back and choose templates.</p>";
+        } else {
+            formState.services = config.services.map(serviceName => {
+                const bank = facilityQuestionBankCorporate[serviceName] || genericDefaultQuestionsTemplate;
+                const clonedQuestions = JSON.parse(JSON.stringify(bank));
+                return {
+                    name: serviceName,
+                    questions: clonedQuestions
+                };
+            });
+        }
+    }
+
+    formNameInput.value = formState.name || "Untitled Corporate Form";
+    formNameInput.addEventListener('input', () => {
+        formState.name = formNameInput.value;
+    });
+
+    renderServices();
+    setupRating();
+
+    if (formState.overallRating > 0) {
+        setOverallRating(formState.overallRating);
+        if (formState.ratingReason) {
+            document.getElementById('ratingReason').value = formState.ratingReason;
+        }
+    }
+}
+
+// ------------- RENDER FACILITIES & QUESTIONS -------------
+function renderServices() {
+    servicesContainer.innerHTML = "";
+    formState.services.forEach((service, sIdx) => {
+        const section = document.createElement('section');
+        section.className = 'service-section';
+
+        const header = document.createElement('div');
+        header.className = 'service-header-row';
+        const title = document.createElement('h3');
+        title.textContent = service.name;
+        const addBtn = document.createElement('button');
+        addBtn.textContent = "Add Question";
+        addBtn.type = "button";
+        addBtn.onclick = () => addQuestion(sIdx);
+
+        header.appendChild(title);
+        header.appendChild(addBtn);
+        section.appendChild(header);
+
+        const questionsContainer = document.createElement('div');
+        questionsContainer.className = 'questions-container';
+
+        service.questions.forEach((q, qIdx) => {
+            const qBox = document.createElement('div');
+            qBox.className = 'question-box';
+            qBox.draggable = true;
+            qBox.dataset.serviceIndex = sIdx;
+            qBox.dataset.questionIndex = qIdx;
+
+            qBox.addEventListener('dragstart', onDragStart);
+            qBox.addEventListener('dragover', onDragOver);
+            qBox.addEventListener('drop', onDrop);
+
+            const qRow = document.createElement('div');
+            qRow.className = 'question-row';
+
+            const dragHandle = document.createElement('span');
+            dragHandle.className = 'drag-handle';
+            dragHandle.textContent = "≡";
+
+            const qInput = document.createElement('input');
+            qInput.type = 'text';
+            qInput.value = q.text;
+            qInput.oninput = (e) => {
+                formState.services[sIdx].questions[qIdx].text = e.target.value;
+            };
+
+            const typeSelect = document.createElement('select');
+            typeSelect.className = 'type-select';
+            ["multiple", "short", "rating"].forEach(t => {
+                const opt = document.createElement('option');
+                opt.value = t;
+                opt.textContent =
+                    (t === "multiple" ? "Multiple Choice" :
+                     t === "short" ? "Short Answer" : "Rating (1–5)");
+                if (q.type === t) opt.selected = true;
+                typeSelect.appendChild(opt);
+            });
+            typeSelect.onchange = (e) => {
+                const newType = e.target.value;
+                const qRef = formState.services[sIdx].questions[qIdx];
+                qRef.type = newType;
+                if (newType === "short" || newType === "rating") {
+                    qRef.options = [];
+                } else if (newType === "multiple" && (!qRef.options || qRef.options.length === 0)) {
+                    qRef.options = ["Strongly agree", "Agree", "Neutral", "Disagree", "Strongly disagree"];
+                }
+                renderServices();
+            };
+
+            const deleteBtn = document.createElement('button');
+            deleteBtn.className = 'delete-question-btn';
+            deleteBtn.type = "button";
+            deleteBtn.textContent = "Delete";
+            deleteBtn.onclick = () => deleteQuestion(sIdx, qIdx);
+
+            qRow.appendChild(dragHandle);
+            qRow.appendChild(qInput);
+            qRow.appendChild(typeSelect);
+            qRow.appendChild(deleteBtn);
+
+            qBox.appendChild(qRow);
+
+            if (q.type === "multiple") {
+                const optionsBox = document.createElement('div');
+                optionsBox.className = "options-box";
+
+                const optionsLabel = document.createElement('p');
+                optionsLabel.className = "subtext";
+                optionsLabel.textContent = "Options:";
+
+                optionsBox.appendChild(optionsLabel);
+
+                (q.options || []).forEach((optText, oIdx) => {
+                    const optRow = document.createElement('div');
+                    optRow.className = "option-row";
+
+                    const optInput = document.createElement('input');
+                    optInput.type = 'text';
+                    optInput.value = optText;
+                    optInput.oninput = (e) => {
+                        formState.services[sIdx].questions[qIdx].options[oIdx] = e.target.value;
+                    };
+
+                    const removeOptBtn = document.createElement('button');
+                    removeOptBtn.type = "button";
+                    removeOptBtn.textContent = "x";
+                    removeOptBtn.className = "remove-option-btn";
+                    removeOptBtn.onclick = () => {
+                        formState.services[sIdx].questions[qIdx].options.splice(oIdx, 1);
+                        renderServices();
+                    };
+
+                    optRow.appendChild(optInput);
+                    optRow.appendChild(removeOptBtn);
+                    optionsBox.appendChild(optRow);
+                });
+
+                const addOptBtn = document.createElement('button');
+                addOptBtn.type = "button";
+                addOptBtn.className = "add-option-btn";
+                addOptBtn.textContent = "Add Option";
+                addOptBtn.onclick = () => {
+                    const qRef = formState.services[sIdx].questions[qIdx];
+                    if (!qRef.options) qRef.options = [];
+                    qRef.options.push("New option");
+                    renderServices();
+                };
+
+                optionsBox.appendChild(addOptBtn);
+                qBox.appendChild(optionsBox);
+            }
+
+            questionsContainer.appendChild(qBox);
+        });
+
+        section.appendChild(questionsContainer);
+        servicesContainer.appendChild(section);
+    });
+}
+
+// ------------- DRAG & DROP REORDER -------------
+let draggedServiceIndex = null;
+let draggedQuestionIndex = null;
+
+function onDragStart(e) {
+    draggedServiceIndex = parseInt(e.currentTarget.dataset.serviceIndex, 10);
+    draggedQuestionIndex = parseInt(e.currentTarget.dataset.questionIndex, 10);
+}
+
+function onDragOver(e) {
+    e.preventDefault();
+}
+
+function onDrop(e) {
+    e.preventDefault();
+    const target = e.currentTarget;
+    const targetServiceIndex = parseInt(target.dataset.serviceIndex, 10);
+    const targetQuestionIndex = parseInt(target.dataset.questionIndex, 10);
+
+    if (draggedServiceIndex === null || draggedQuestionIndex === null) return;
+
+    const sourceQuestions = formState.services[draggedServiceIndex].questions;
+    const [moved] = sourceQuestions.splice(draggedQuestionIndex, 1);
+
+    const targetQuestions = formState.services[targetServiceIndex].questions;
+    targetQuestions.splice(targetQuestionIndex, 0, moved);
+
+    draggedServiceIndex = null;
+    draggedQuestionIndex = null;
+
+    renderServices();
+}
+
+// ------------- QUESTION CRUD -------------
+function addQuestion(serviceIndex) {
+    formState.services[serviceIndex].questions.push({
+        text: "New question",
+        type: "short",
+        options: []
+    });
+    renderServices();
+}
+
+function deleteQuestion(serviceIndex, questionIndex) {
+    formState.services[serviceIndex].questions.splice(questionIndex, 1);
+    renderServices();
+}
+
+// ------------- OVERALL RATING LOGIC -------------
+function setupRating() {
+    const starsContainer = document.getElementById('starsContainer');
+    const reasonContainer = document.getElementById('reasonContainer');
+    const reason = document.getElementById('ratingReason');
+
+    starsContainer.querySelectorAll('span').forEach(star => {
+        star.addEventListener('click', () => {
+            const value = parseInt(star.dataset.value, 10);
+            setOverallRating(value);
+
+            // SHOW / HIDE REASON BASED ON VALUE (1–2 show, 3–5 hide)
+            if (value <= 2) {
+                reasonContainer.style.display = 'block';
+            } else {
+                reasonContainer.style.display = 'none';
+            }
+        });
+    });
+
+    reason.addEventListener('input', () => {
+        formState.ratingReason = reason.value;
+    });
+}
+
+function setOverallRating(value) {
+    const starsContainer = document.getElementById('starsContainer');
+    const label = document.getElementById('ratingLabel');
+    formState.overallRating = value;
+
+    starsContainer.querySelectorAll('span').forEach(star => {
+        const v = parseInt(star.dataset.value, 10);
+        star.classList.toggle('active', v <= value);
+    });
+
+    if (value === 0) {
+        label.textContent = "Rating: not set";
+    } else {
+        label.textContent = "Rating: " + value + " star" + (value > 1 ? "s" : "");
+    }
+}
+
+// ------------- SAVE & SUBMIT -------------
+function saveDraft() {
+    try {
+        formState.name = formNameInput.value || "Untitled Corporate Form";
+        const payload = {
+            ...formState,
+            domain: "corporate"
+        };
+        const existing = JSON.parse(localStorage.getItem("draftForms") || "[]");
+        const updated = existing.filter(d => d.id !== payload.id);
+        updated.push(payload);
+        localStorage.setItem("draftForms", JSON.stringify(updated));
+        alert("Draft saved locally.");
+    } catch (e) {
+        console.error("Error saving draft:", e);
+        alert("Could not save draft.");
+    }
+}
+
+async function submitForm() {
+    formState.name = formNameInput.value || "Untitled Corporate Form";
+    if (!formState.name.trim()) {
+        alert("Please enter a form name.");
+        return;
+    }
+    if (!formState.services || formState.services.length === 0) {
+        alert("No facilities selected. Please go back and choose templates.");
+        return;
+    }
+
+    const payload = {
+        ...formState,
+        domain: "corporate"
+    };
+
+    try {
+        const res = await fetch("https://web-production-315e.up.railway.app/save-form-template", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+        });
+        if (res.ok) {
+            const data = await res.json();
+            formState.id = data.id;
+            alert("Corporate form template saved successfully.");
+        } else {
+            alert("Failed to save form template.");
+        }
+    } catch (e) {
+        console.error("Error submitting form:", e);
+        alert("Error while saving form template.");
+    }
+}
+
+// ------------- NAVIGATION -------------
+function goBackToTemplates() {
+    window.location.href = "corporate-templates.html";
+}
+
+// ------------- START -------------
+document.addEventListener('DOMContentLoaded', initBuilder);
+</script>
+
+</body>
+</html>

@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Government Form Builder</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="form-builder-corgo.css">
+</head>
+<body>
+
+
+<nav class="navbar">
+    <div class="logo">Anonymous Feedback System - Government Form Builder</div>
+</nav>
+
+
+<div class="form-builder-container">
+    <header class="form-builder-header">
+        <h2>Customize Government Service Feedback Form</h2>
+        <p class="subtext">
+            Edit questions for each selected government service category. You can add, update, delete, reorder questions and modify answer types and options. Questions will remain standardized across all offices.
+        </p>
+        <div class="form-name-row">
+            <label for="formName">Form name</label>
+            <input type="text" id="formName" placeholder="Government Office Feedback Form">
+        </div>
+        <button class="back-btn" onclick="goBackToTemplates()">Back to Templates</button>
+    </header>
+
+
+    <main id="servicesContainer">
+        <!-- Service sections injected by JS -->
+    </main>
+
+
+    <section class="overall-rating-section">
+        <h3>Overall Rating</h3>
+        <p class="subtext">
+            Please set the overall rating question (required, 1–5 stars). This will be asked for every office and used in negative-feedback escalation.
+        </p>
+
+
+        <div class="stars-container" id="starsContainer">
+            <span data-value="1">★</span>
+            <span data-value="2">★</span>
+            <span data-value="3">★</span>
+            <span data-value="4">★</span>
+            <span data-value="5">★</span>
+        </div>
+        <p id="ratingLabel" class="subtext">Rating: not set</p>
+
+
+        <div id="reasonContainer" class="reason-container">
+            <label for="ratingReason">Reason for low rating (mandatory for negative ratings)</label>
+            <textarea id="ratingReason" placeholder="This text will be shown when the citizen gives a low overall rating."></textarea>
+        </div>
+    </section>
+
+
+    <section class="form-builder-actions">
+        <button class="secondary-btn" onclick="saveDraft()">Save Draft</button>
+        <button class="primary-btn" onclick="submitForm()">Submit Form</button>
+    </section>
+</div>
+
+
+<script>
+// ---------------- URL / CONFIG ----------------
+let urlParams = new URLSearchParams(window.location.search);
+let templateIdFromUrl = urlParams.get("id");
+
+
+let config = null;
+try {
+    const raw = localStorage.getItem("governmentFormConfig");
+    if (raw) {
+        config = JSON.parse(raw);
+    }
+} catch (e) {
+    console.error("Error reading government config:", e);
+}
+
+
+const servicesContainer = document.getElementById('servicesContainer');
+const formNameInput = document.getElementById('formName');
+
+
+// ------------- GOVERNMENT QUESTION BANK -------------
+const facilityQuestionBankGovernment = {
+    "Public Service Efficiency": [
+        { text: "How clearly was the purpose of your visit or request understood by the office?", type: "rating", options: [] },
+        { text: "How efficiently were the required steps for your service explained to you?", type: "rating", options: [] },
+        { text: "How satisfied are you with the number of steps involved in completing your service?", type: "rating", options: [] },
+        { text: "How often did you have to repeat the same information to different counters or staff?", type: "rating", options: [] },
+        { text: "How satisfied are you with the coordination between different counters or sections handling your request?", type: "rating", options: [] },
+        { text: "How quickly were you attended after arriving at the office?", type: "rating", options: [] },
+        { text: "How satisfied are you with the time taken to start the processing of your service?", type: "rating", options: [] },
+        { text: "How satisfied are you with the total time taken to complete your service?", type: "rating", options: [] },
+        { text: "How often did you face interruptions or unnecessary delays during the service process?", type: "rating", options: [] },
+        { text: "How satisfied are you with the way follow-up actions (if any) were handled?", type: "rating", options: [] },
+        { text: "How satisfied are you with the accuracy of the documents or outputs (certificate, license, receipt, etc.) you received?", type: "rating", options: [] },
+        { text: "How often did you feel that work was done on a 'first come, first served' basis?", type: "rating", options: [] },
+        { text: "How satisfied are you with the clarity of which counter or section handles which type of work?", type: "rating", options: [] },
+        { text: "How often did you feel that your work was redirected unnecessarily between counters?", type: "rating", options: [] },
+        { text: "How satisfied are you with the availability of staff to handle peak crowd times?", type: "rating", options: [] },
+        { text: "How fairly do you think services are provided to all citizens, regardless of background?", type: "rating", options: [] },
+        { text: "How confident are you that the procedures followed were as per government rules and not arbitrary?", type: "rating", options: [] },
+        { text: "How satisfied are you with the handling of urgent or time-bound requests?", type: "rating", options: [] },
+        { text: "How often did you need to visit the office more than once for the same service?", type: "rating", options: [] },
+        { text: "How satisfied are you with the information provided about when your work would be completed?", type: "rating", options: [] },
+        { text: "How often did you feel the service you received was consistent with your previous experiences at this office?", type: "rating", options: [] },
+        { text: "Overall, how would you rate the efficiency of the public service you received today?", type: "rating", options: [] },
+        { text: "What aspect of the service process worked best for you?", type: "short", options: [] },
+        { text: "What was the most time-consuming or difficult part of the service process?", type: "short", options: [] },
+        { text: "Please share any suggestions to improve the efficiency of this public service.", type: "short", options: [] }
+    ],
+
+    "Staff Behavior & Courtesy": [
+        { text: "How polite and respectful were the staff you interacted with?", type: "rating", options: [] },
+        { text: "How patiently did staff listen to your questions or concerns?", type: "rating", options: [] },
+        { text: "How clearly did staff explain the procedures or next steps to you?", type: "rating", options: [] },
+        { text: "How fairly were you treated compared to other citizens present?", type: "rating", options: [] },
+        { text: "How professional was the language and tone used by staff?", type: "rating", options: [] },
+        { text: "How willing were staff to guide you when you were confused or unsure?", type: "rating", options: [] },
+        { text: "How comfortable did you feel approaching staff for clarification?", type: "rating", options: [] },
+        { text: "How responsive were staff when you needed help more than once?", type: "rating", options: [] },
+        { text: "How satisfied are you with staff behavior towards senior citizens and differently abled persons?", type: "rating", options: [] },
+        { text: "How satisfied are you with staff behavior while managing queues or crowds?", type: "rating", options: [] },
+        { text: "How satisfied are you with the honesty and integrity you perceived in staff behaviour?", type: "rating", options: [] },
+        { text: "How often did you feel ignored or not attended to by staff when you needed help?", type: "rating", options: [] },
+        { text: "How satisfied are you that staff did not show favouritism towards any particular person?", type: "rating", options: [] },
+        { text: "How satisfied are you with the appearance, dress code, and discipline of staff on duty?", type: "rating", options: [] },
+        { text: "How satisfied are you with staff behaviour at enquiry or helpdesk counters?", type: "rating", options: [] },
+        { text: "How comfortable did you feel about raising a complaint regarding staff behavior if needed?", type: "rating", options: [] },
+        { text: "How often did you notice rude or unprofessional behavior towards any citizen in the office?", type: "rating", options: [] },
+        { text: "Overall, how would you rate staff behaviour and courtesy in this office?", type: "rating", options: [] },
+        { text: "Have you ever seen or experienced staff asking for any unofficial payment or favour here?", type: "multiple", options: ["Never", "Rarely", "Sometimes", "Often", "Prefer not to say"] },
+        { text: "How safe and respected did you feel while interacting with staff?", type: "rating", options: [] },
+        { text: "What did you appreciate most about staff behavior today?", type: "short", options: [] },
+        { text: "What aspect of staff behavior do you want to see improved immediately?", type: "short", options: [] },
+        { text: "How satisfied are you with staff response when you raised a concern or complaint?", type: "rating", options: [] },
+        { text: "How satisfied are you with staff sensitivity towards women and children visitors?", type: "rating", options: [] },
+        { text: "Please share any additional comments on staff behavior and professionalism.", type: "short", options: [] }
+    ],
+
+    "Transparency & Fairness": [
+        { text: "How clearly were the eligibility criteria for your service explained to you?", type: "rating", options: [] },
+        { text: "How clearly were the required documents for your service communicated?", type: "rating", options: [] },
+        { text: "How satisfied are you with the clarity of fees or charges related to your service?", type: "rating", options: [] },
+        { text: "How often did you feel that the process steps were explained in a transparent manner?", type: "rating", options: [] },
+        { text: "How satisfied are you that no hidden conditions were applied during your service?", type: "rating", options: [] },
+        { text: "How fairly do you think your request was processed compared to others?", type: "rating", options: [] },
+        { text: "How confident are you that your application was treated without bias or discrimination?", type: "rating", options: [] },
+        { text: "How satisfied are you with the visibility of official information (boards, notices, guidelines, etc.)?", type: "rating", options: [] },
+        { text: "How clearly were you informed about the expected timelines for your service?", type: "rating", options: [] },
+        { text: "How often did you receive updates or explanations when there was a delay?", type: "rating", options: [] },
+        { text: "How satisfied are you that decisions taken on your case were supported with valid reasons?", type: "rating", options: [] },
+        { text: "How often did you feel that rules were applied consistently to everyone?", type: "rating", options: [] },
+        { text: "How satisfied are you with the access to grievance redressal or appeal mechanisms?", type: "rating", options: [] },
+        { text: "How clearly were you informed about your right to escalate or appeal decisions?", type: "rating", options: [] },
+        { text: "How satisfied are you that no unofficial payments or favours were needed for your work?", type: "rating", options: [] },
+        { text: "How strongly do you agree that the overall process felt corruption-free?", type: "multiple", options: ["Strongly agree", "Agree", "Neutral", "Disagree", "Strongly disagree"] },
+        { text: "How satisfied are you with the fairness in token or queue handling?", type: "rating", options: [] },
+        { text: "How often did you feel that some people were given priority without valid reasons?", type: "rating", options: [] },
+        { text: "Overall, how would you rate the transparency of processes in this office?", type: "rating", options: [] },
+        { text: "Overall, how would you rate the fairness of decisions made on your request?", type: "rating", options: [] },
+        { text: "What information related to your service should be displayed more clearly to the public?", type: "short", options: [] },
+        { text: "Have you ever hesitated to question a decision due to lack of information?", type: "multiple", options: ["Yes", "No", "Sometimes", "Prefer not to say"] },
+        { text: "What change would improve transparency the most in this office?", type: "short", options: [] },
+        { text: "Please share any incident (without names) that made you feel processes were not fair.", type: "short", options: [] }
+    ],
+
+    "Processing Time & Delays": [
+        { text: "How satisfied are you with the waiting time before your token or turn was called?", type: "rating", options: [] },
+        { text: "How satisfied are you with the time taken at the counter to process your request?", type: "rating", options: [] },
+        { text: "How satisfied are you with the total time taken from submission to completion of your service?", type: "rating", options: [] },
+        { text: "How clearly were expected processing times communicated to you at the beginning?", type: "rating", options: [] },
+        { text: "How often did you experience delays without any explanation from staff?", type: "rating", options: [] },
+        { text: "How satisfied are you with the explanation given to you when there was a delay?", type: "rating", options: [] },
+        { text: "How satisfied are you with the way urgent or time-bound requests are prioritized?", type: "rating", options: [] },
+        { text: "How often did you need to follow up or visit again due to delays?", type: "rating", options: [] },
+        { text: "How satisfied are you with the use of appointments or tokens to reduce waiting time?", type: "rating", options: [] },
+        { text: "How satisfied are you with the office's ability to manage peak-hour crowds without long delays?", type: "rating", options: [] },
+        { text: "How often did system or network issues cause delays during your visit?", type: "rating", options: [] },
+        { text: "How satisfied are you with the way system or technical issues were handled when they occurred?", type: "rating", options: [] },
+        { text: "How satisfied are you with the punctuality of staff in starting office operations on time?", type: "rating", options: [] },
+        { text: "How often did you feel that your time was valued by the office?", type: "rating", options: [] },
+        { text: "How often did you wait in a queue without clear information on how long it would take?", type: "rating", options: [] },
+        { text: "How satisfied are you with the information provided about any backlog or processing load?", type: "rating", options: [] },
+        { text: "How strongly do you agree that processing time for your service was reasonable?", type: "multiple", options: ["Strongly agree", "Agree", "Neutral", "Disagree", "Strongly disagree"] },
+        { text: "Compared to your expectations, how was the actual processing time?", type: "multiple", options: ["Much faster", "Slightly faster", "As expected", "Slightly slower", "Much slower"] },
+        { text: "Overall, how would you rate your experience related to processing time and delays?", type: "rating", options: [] },
+        { text: "What part of the process caused the longest delay for you?", type: "short", options: [] },
+        { text: "What change would most reduce your waiting or processing time in this office?", type: "short", options: [] },
+        { text: "How often did you have to take a full or half day off only to complete this service?", type: "rating", options: [] },
+        { text: "How satisfied are you with any SMS/online updates provided about your application status?", type: "rating", options: [] },
+        { text: "Please share any additional comments on processing time and handling of delays.", type: "short", options: [] }
+    ],
+
+    "Infrastructure & Cleanliness": [
+        { text: "How satisfied are you with the cleanliness of the office premises?", type: "rating", options: [] },
+        { text: "How satisfied are you with the cleanliness of waiting areas and seating spaces?", type: "rating", options: [] },
+        { text: "How satisfied are you with the cleanliness and maintenance of washrooms/toilets?", type: "rating", options: [] },
+        { text: "How satisfied are you with the availability and condition of drinking water facilities?", type: "rating", options: [] },
+        { text: "How satisfied are you with the seating arrangements provided for citizens?", type: "rating", options: [] },
+        { text: "How satisfied are you with ventilation and air flow (fans, windows, AC, etc.)?", type: "rating", options: [] },
+        { text: "How satisfied are you with lighting inside the office and waiting areas?", type: "rating", options: [] },
+        { text: "How satisfied are you with the condition of floors, walls, and ceilings in the office?", type: "rating", options: [] },
+        { text: "How satisfied are you with the cleanliness and maintenance of counters and desks?", type: "rating", options: [] },
+        { text: "How satisfied are you with the availability of dustbins and their maintenance?", type: "rating", options: [] },
+        { text: "How satisfied are you with the condition and readability of signboards and notices?", type: "rating", options: [] },
+        { text: "How satisfied are you with the availability of shade or shelter outside the office (if you waited outside)?", type: "rating", options: [] },
+        { text: "How satisfied are you with the condition of parking areas (if used)?", type: "rating", options: [] },
+        { text: "How satisfied are you with the cleanliness around the office entrance and surroundings?", type: "rating", options: [] },
+        { text: "How often did you notice garbage or waste not being cleaned regularly?", type: "rating", options: [] },
+        { text: "How satisfied are you with the maintenance of lifts/ramps (if available)?", type: "rating", options: [] },
+        { text: "How strongly do you agree that the office environment feels safe and hygienic for all age groups?", type: "multiple", options: ["Strongly agree", "Agree", "Neutral", "Disagree", "Strongly disagree"] },
+        { text: "Overall, how would you rate the infrastructure and cleanliness of this office?", type: "rating", options: [] },
+        { text: "Which area needs the most urgent improvement in cleanliness or maintenance?", type: "short", options: [] },
+        { text: "How satisfied are you with the frequency of visible cleaning activities during working hours?", type: "rating", options: [] },
+        { text: "How often did you face difficulty finding basic facilities like washrooms or drinking water?", type: "rating", options: [] },
+        { text: "How satisfied are you with the condition of electrical fittings (switches, plugs, fans) that you noticed?", type: "rating", options: [] },
+        { text: "What specific change in infrastructure would most improve your comfort here?", type: "short", options: [] },
+        { text: "Please share any additional comments on the office’s infrastructure and cleanliness.", type: "short", options: [] }
+    ],
+
+    "Digital Services & Online Portals": [
+        { text: "How easy was it to find the official website or online portal for your service?", type: "rating", options: [] },
+        { text: "How easy was it to understand the online instructions or guidelines for your service?", type: "rating", options: [] },
+        { text: "How satisfied are you with the registration or login process on the portal?", type: "rating", options: [] },
+        { text: "How satisfied are you with the process of filling forms or providing details online?", type: "rating", options: [] },
+        { text: "How satisfied are you with the speed and responsiveness of the online portal?", type: "rating", options: [] },
+        { text: "How often did you face technical errors or crashes while using the portal?", type: "rating", options: [] },
+        { text: "How clearly were error messages or validation messages shown when you made a mistake online?", type: "rating", options: [] },
+        { text: "How satisfied are you with the security of the portal (OTP, passwords, etc.) from your point of view?", type: "rating", options: [] },
+        { text: "How satisfied are you with online payment options (if used) in terms of ease and reliability?", type: "rating", options: [] },
+        { text: "How satisfied are you with the ability to track the status of your application online?", type: "rating", options: [] },
+        { text: "How often did you need to visit the office even after completing steps online?", type: "rating", options: [] },
+        { text: "How satisfied are you with the help or FAQ content available on the online portal?", type: "rating", options: [] },
+        { text: "How easy was it to upload or submit documents online?", type: "rating", options: [] },
+        { text: "How satisfied are you with SMS/email updates sent from the online system?", type: "rating", options: [] },
+        { text: "How strongly do you agree that the online system reduced your need to stand in queues?", type: "multiple", options: ["Strongly agree", "Agree", "Neutral", "Disagree", "Strongly disagree"] },
+        { text: "How would you rate the overall user-friendliness of the portal interface?", type: "rating", options: [] },
+        { text: "How comfortable would elderly or less tech-savvy people be in using this online service, in your opinion?", type: "rating", options: [] },
+        { text: "Overall, how would you rate your experience with digital/online services for this office?", type: "rating", options: [] },
+        { text: "Which part of the online process did you find most confusing?", type: "short", options: [] },
+        { text: "Did you face any interruption or failure during online payment or submission?", type: "multiple", options: ["No issues", "Minor issues", "Major issues", "Did not use online payment"] },
+        { text: "What additional online features or improvements would you like to see?", type: "short", options: [] },
+        { text: "How often did you need help from others to use the online portal?", type: "rating", options: [] },
+        { text: "How satisfied are you with the alignment between online information and what actually happened at the office?", type: "rating", options: [] },
+        { text: "Please share any additional comments on digital services and online portals.", type: "short", options: [] }
+    ],
+
+    "Complaint Handling Mechanism": [
+        { text: "How aware were you of the options available to raise a complaint or grievance in this office?", type: "rating", options: [] },
+        { text: "How easy was it to find complaint forms, boxes, or online links for submitting a grievance?", type: "rating", options: [] },
+        { text: "How clearly were the complaint procedures explained (where to submit, how it will be handled, etc.)?", type: "rating", options: [] },
+        { text: "How satisfied are you with the behavior of staff when you raised or tried to raise a complaint?", type: "rating", options: [] },
+        { text: "How satisfied are you with the time taken to acknowledge your complaint?", type: "rating", options: [] },
+        { text: "How satisfied are you with the time taken to resolve your complaint?", type: "rating", options: [] },
+        { text: "How satisfied are you with the fairness of the action taken on your complaint?", type: "rating", options: [] },
+        { text: "How satisfied are you with the communication you received about the status of your complaint?", type: "rating", options: [] },
+        { text: "How often did you feel that your complaint was ignored or not taken seriously?", type: "rating", options: [] },
+        { text: "How safe did you feel from any retaliation or negative treatment after raising a complaint?", type: "rating", options: [] },
+        { text: "How satisfied are you with the confidentiality maintained about your complaint details?", type: "rating", options: [] },
+        { text: "How clearly were you informed about the option to escalate your complaint if not resolved?", type: "rating", options: [] },
+        { text: "How satisfied are you with online or digital options to lodge complaints (if available)?", type: "rating", options: [] },
+        { text: "How strongly do you agree that this office genuinely uses feedback and complaints to improve services?", type: "multiple", options: ["Strongly agree", "Agree", "Neutral", "Disagree", "Strongly disagree"] },
+        { text: "Overall, how would you rate the complaint handling system of this office?", type: "rating", options: [] },
+        { text: "Have you ever avoided raising a complaint due to fear or belief that nothing will change?", type: "multiple", options: ["Yes", "No", "Sometimes", "Prefer not to say"] },
+        { text: "How satisfied are you with the visibility of information (boards, posters, online) about complaint channels?", type: "rating", options: [] },
+        { text: "How often do you feel that complaints from vulnerable groups (elderly, women, differently abled) are given priority?", type: "rating", options: [] },
+        { text: "What is one improvement that would make you more confident in using the complaint system?", type: "short", options: [] },
+        { text: "If you raised a complaint earlier, how satisfied are you with the final outcome?", type: "rating", options: [] },
+        { text: "How satisfied are you with the politeness and respect shown while listening to your complaint?", type: "rating", options: [] },
+        { text: "How clear and simple are the forms or formats used for filing complaints?", type: "rating", options: [] },
+        { text: "What channels would you prefer for raising complaints in the future (online, box, in‑person, helpline)?", type: "short", options: [] },
+        { text: "Please share any additional comments about how complaints and grievances are handled here.", type: "short", options: [] }
+    ],
+
+    "Accessibility for Elderly & Disabled": [
+        { text: "How easy is it for senior citizens to enter the office premises (gates, steps, slopes)?", type: "rating", options: [] },
+        { text: "How easy is it for differently abled persons to enter and move inside the office?", type: "rating", options: [] },
+        { text: "How satisfied are you with the availability and condition of ramps or lifts, if needed?", type: "rating", options: [] },
+        { text: "How satisfied are you with the availability of seating for elderly and differently abled persons?", type: "rating", options: [] },
+        { text: "How satisfied are you with the priority or separate queues given to senior citizens and differently abled persons?", type: "rating", options: [] },
+        { text: "How satisfied are you with the behavior of staff towards elderly visitors?", type: "rating", options: [] },
+        { text: "How satisfied are you with the behavior of staff towards differently abled visitors?", type: "rating", options: [] },
+        { text: "How easy is it to read signboards and instructions for people with weak eyesight?", type: "rating", options: [] },
+        { text: "How satisfied are you with the audibility of announcements or calling of token numbers?", type: "rating", options: [] },
+        { text: "How satisfied are you with the accessibility of washrooms for elderly and differently abled persons?", type: "rating", options: [] },
+        { text: "How satisfied are you with the availability of wheelchair or physical assistance if needed?", type: "rating", options: [] },
+        { text: "How often did you notice any dedicated helpdesk or support for vulnerable groups?", type: "rating", options: [] },
+        { text: "How strongly do you agree that this office is friendly and safe for elderly visitors?", type: "multiple", options: ["Strongly agree", "Agree", "Neutral", "Disagree", "Strongly disagree"] },
+        { text: "How strongly do you agree that this office is friendly and safe for differently abled visitors?", type: "multiple", options: ["Strongly agree", "Agree", "Neutral", "Disagree", "Strongly disagree"] },
+        { text: "How satisfied are you with the clarity of directions to essential facilities for those with mobility issues?", type: "rating", options: [] },
+        { text: "How often did you observe others offering support (staff or public) to elderly/disabled persons here?", type: "rating", options: [] },
+        { text: "Overall, how would you rate the accessibility of this office for elderly visitors?", type: "rating", options: [] },
+        { text: "Overall, how would you rate the accessibility of this office for differently abled visitors?", type: "rating", options: [] },
+        { text: "What is the biggest barrier faced by elderly or differently abled persons in this office?", type: "short", options: [] },
+        { text: "What change would most improve accessibility in this office?", type: "short", options: [] },
+        { text: "How satisfied are you with the time taken to serve elderly or differently abled persons once they arrive?", type: "rating", options: [] },
+        { text: "How often did you observe elderly or differently abled persons standing for long periods?", type: "rating", options: [] },
+        { text: "How satisfied are you with transport or approach roads immediately around the office for such visitors?", type: "rating", options: [] },
+        { text: "Please share any additional comments about accessibility for elderly and differently abled persons.", type: "short", options: [] }
+    ],
+
+    "Security & Crowd Management": [
+        { text: "How safe did you feel in and around the office premises during your visit?", type: "rating", options: [] },
+        { text: "How satisfied are you with the presence and visibility of security personnel (if any)?", type: "rating", options: [] },
+        { text: "How satisfied are you with the way entry and exit points are managed?", type: "rating", options: [] },
+        { text: "How satisfied are you with the management of queues at counters or service points?", type: "rating", options: [] },
+        { text: "How satisfied are you with the crowd control during peak hours?", type: "rating", options: [] },
+        { text: "How satisfied are you with the process of issuing and managing tokens (if used)?", type: "rating", options: [] },
+        { text: "How often did you experience pushing, jumping queues, or disorderly behavior?", type: "rating", options: [] },
+        { text: "How satisfied are you with the response of staff or security when crowd issues arise?", type: "rating", options: [] },
+        { text: "How satisfied are you with the safety measures for women and children in the office?", type: "rating", options: [] },
+        { text: "How satisfied are you with lighting and visibility in corridors, waiting areas, and entrances?", type: "rating", options: [] },
+        { text: "How satisfied are you with bag checking or basic security checks (if applicable)?", type: "rating", options: [] },
+        { text: "How satisfied are you with the availability of emergency exits or clear directions in case of an emergency?", type: "rating", options: [] },
+        { text: "How often did you notice fights, heated arguments, or disturbances in the office?", type: "rating", options: [] },
+        { text: "How safe did you feel for your belongings (bags, documents, valuables) while inside the office?", type: "rating", options: [] },
+        { text: "How satisfied are you with the separation of areas for different services to avoid overcrowding?", type: "rating", options: [] },
+        { text: "How strongly do you agree that the office is well-prepared to handle emergencies (fire, medical, etc.)?", type: "multiple", options: ["Strongly agree", "Agree", "Neutral", "Disagree", "Strongly disagree"] },
+        { text: "Overall, how would you rate security arrangements in this office?", type: "rating", options: [] },
+        { text: "Overall, how would you rate crowd management in this office?", type: "rating", options: [] },
+        { text: "What situation made you feel most unsafe or uncomfortable, if any, during your visit?", type: "short", options: [] },
+        { text: "What immediate change would most improve crowd management here?", type: "short", options: [] },
+        { text: "How often did you see staff or security giving priority to vulnerable persons in crowded situations?", type: "rating", options: [] },
+        { text: "How satisfied are you with the announcements or display systems used to guide crowds?", type: "rating", options: [] },
+        { text: "How satisfied are you with parking or vehicle movement management around the office?", type: "rating", options: [] },
+        { text: "Please share any additional comments on security and crowd management.", type: "short", options: [] }
+    ],
+
+    "Information Availability & Guidance": [
+        { text: "How easy was it to find basic information about services offered by this office?", type: "rating", options: [] },
+        { text: "How satisfied are you with the clarity of boards or posters displaying services and timings?", type: "rating", options: [] },
+        { text: "How easy was it to find where to go for your specific service (counter number, section, floor, etc.)?", type: "rating", options: [] },
+        { text: "How satisfied are you with the directions or signboards inside the office?", type: "rating", options: [] },
+        { text: "How satisfied are you with the availability of an enquiry or helpdesk counter?", type: "rating", options: [] },
+        { text: "How satisfied are you with the quality of guidance given at the enquiry/helpdesk counter?", type: "rating", options: [] },
+        { text: "How clearly were the documents and proofs required for your service explained to you?", type: "rating", options: [] },
+        { text: "How satisfied are you with the availability of printed brochures, forms, or instruction sheets (if applicable)?", type: "rating", options: [] },
+        { text: "How easy was it to understand the language used in notices and forms?", type: "rating", options: [] },
+        { text: "How satisfied are you with the availability of information in regional/local language?", type: "rating", options: [] },
+        { text: "How satisfied are you with the availability of staff to clarify doubts about procedures?", type: "rating", options: [] },
+        { text: "How often did you feel confused about where to go or what to do next?", type: "rating", options: [] },
+        { text: "How satisfied are you with the information about fees, charges, or payments displayed in the office?", type: "rating", options: [] },
+        { text: "How satisfied are you with the information about expected processing times displayed or communicated?", type: "rating", options: [] },
+        { text: "How clearly were you informed about any missing documents or additional requirements?", type: "rating", options: [] },
+        { text: "How strongly do you agree that accurate information is easily available without depending on middlemen?", type: "multiple", options: ["Strongly agree", "Agree", "Neutral", "Disagree", "Strongly disagree"] },
+        { text: "Overall, how would you rate the availability of information and guidance in this office?", type: "rating", options: [] },
+        { text: "What information did you find most difficult to obtain during your visit?", type: "short", options: [] },
+        { text: "How often did you have to ask multiple people to get correct guidance?", type: "rating", options: [] },
+        { text: "How satisfied are you with the information available on official websites or online portals linked to this office?", type: "rating", options: [] },
+        { text: "What one change would most improve clarity of information for citizens here?", type: "short", options: [] },
+        { text: "How satisfied are you with the availability of contact details or helplines for follow-up queries?", type: "rating", options: [] },
+        { text: "Please share any suggestions to improve information availability and guidance.", type: "short", options: [] }
+    ]
+};
+
+
+// Generic fallback
+const genericDefaultQuestionsTemplate = [
+    { text: "Overall, how would you rate this government service category?", type: "rating", options: [] },
+    { text: "What did you find most satisfactory about this category?", type: "short", options: [] },
+    { text: "What is the most important improvement needed in this category?", type: "short", options: [] }
+];
+
+
+// ---------------- FORM STATE ----------------
+let formState = {
+    id: null,
+    domain: "government",
+    name: "Government Office Feedback Form",
+    services: [],
+    overallRating: 0,
+    ratingReason: ""
+};
+
+
+// ------------- INIT BUILDER -------------
+async function initBuilder() {
+    if (templateIdFromUrl) {
+        try {
+            const res = await fetch("https://web-production-315e.up.railway.app/load-form-template?id=" + templateIdFromUrl);
+            if (res.ok) {
+                const loaded = await res.json();
+                formState = loaded;
+                if (!formState.domain) formState.domain = "government";
+            }
+        } catch (e) {
+            console.warn("Could not load government template by id:", e);
+        }
+    } else {
+        if (!config || !config.services || config.services.length === 0) {
+            servicesContainer.innerHTML = "<p class='subtext'>No categories selected. Please go back and choose templates.</p>";
+        } else {
+            formState.services = config.services.map(serviceName => {
+                const bank = facilityQuestionBankGovernment[serviceName] || genericDefaultQuestionsTemplate;
+                const clonedQuestions = JSON.parse(JSON.stringify(bank));
+                return {
+                    name: serviceName,
+                    questions: clonedQuestions
+                };
+            });
+        }
+    }
+
+
+    formNameInput.value = formState.name || "Government Office Feedback Form";
+    formNameInput.addEventListener('input', () => {
+        formState.name = formNameInput.value;
+    });
+
+
+    renderServices();
+    setupRating();
+
+
+    if (formState.overallRating > 0) {
+        setOverallRating(formState.overallRating);
+        if (formState.ratingReason) {
+            document.getElementById('ratingReason').value = formState.ratingReason;
+        }
+    }
+}
+
+
+// ------------- RENDER SERVICES & QUESTIONS -------------
+function renderServices() {
+    servicesContainer.innerHTML = "";
+    formState.services.forEach((service, sIdx) => {
+        const section = document.createElement('section');
+        section.className = 'service-section';
+
+
+        const header = document.createElement('div');
+        header.className = 'service-header-row';
+        const title = document.createElement('h3');
+        title.textContent = service.name;
+        const addBtn = document.createElement('button');
+        addBtn.textContent = "Add Question";
+        addBtn.type = "button";
+        addBtn.onclick = () => addQuestion(sIdx);
+
+
+        header.appendChild(title);
+        header.appendChild(addBtn);
+        section.appendChild(header);
+
+
+        const questionsContainer = document.createElement('div');
+        questionsContainer.className = 'questions-container';
+
+
+        service.questions.forEach((q, qIdx) => {
+            const qBox = document.createElement('div');
+            qBox.className = 'question-box';
+            qBox.draggable = true;
+            qBox.dataset.serviceIndex = sIdx;
+            qBox.dataset.questionIndex = qIdx;
+
+
+            qBox.addEventListener('dragstart', onDragStart);
+            qBox.addEventListener('dragover', onDragOver);
+            qBox.addEventListener('drop', onDrop);
+
+
+            const qRow = document.createElement('div');
+            qRow.className = 'question-row';
+
+
+            const dragHandle = document.createElement('span');
+            dragHandle.className = 'drag-handle';
+            dragHandle.textContent = "≡";
+
+
+            const qInput = document.createElement('input');
+            qInput.type = 'text';
+            qInput.value = q.text;
+            qInput.oninput = (e) => {
+                formState.services[sIdx].questions[qIdx].text = e.target.value;
+            };
+
+
+            const typeSelect = document.createElement('select');
+            typeSelect.className = 'type-select';
+            ["multiple", "short", "rating"].forEach(t => {
+                const opt = document.createElement('option');
+                opt.value = t;
+                opt.textContent =
+                    (t === "multiple" ? "Multiple Choice" :
+                     t === "short" ? "Short Answer" : "Rating (1–5)");
+                if (q.type === t) opt.selected = true;
+                typeSelect.appendChild(opt);
+            });
+            typeSelect.onchange = (e) => {
+                const newType = e.target.value;
+                const qRef = formState.services[sIdx].questions[qIdx];
+                qRef.type = newType;
+                if (newType === "short" || newType === "rating") {
+                    qRef.options = [];
+                } else if (newType === "multiple" && (!qRef.options || qRef.options.length === 0)) {
+                    qRef.options = ["Strongly agree", "Agree", "Neutral", "Disagree", "Strongly disagree"];
+                }
+                renderServices();
+            };
+
+
+            const deleteBtn = document.createElement('button');
+            deleteBtn.className = 'delete-question-btn';
+            deleteBtn.type = "button";
+            deleteBtn.textContent = "Delete";
+            deleteBtn.onclick = () => deleteQuestion(sIdx, qIdx);
+
+
+            qRow.appendChild(dragHandle);
+            qRow.appendChild(qInput);
+            qRow.appendChild(typeSelect);
+            qRow.appendChild(deleteBtn);
+
+
+            qBox.appendChild(qRow);
+
+
+            if (q.type === "multiple") {
+                const optionsBox = document.createElement('div');
+                optionsBox.className = "options-box";
+
+
+                const optionsLabel = document.createElement('p');
+                optionsLabel.className = "subtext";
+                optionsLabel.textContent = "Options:";
+
+
+                optionsBox.appendChild(optionsLabel);
+
+
+                (q.options || []).forEach((optText, oIdx) => {
+                    const optRow = document.createElement('div');
+                    optRow.className = "option-row";
+
+
+                    const optInput = document.createElement('input');
+                    optInput.type = 'text';
+                    optInput.value = optText;
+                    optInput.oninput = (e) => {
+                        formState.services[sIdx].questions[qIdx].options[oIdx] = e.target.value;
+                    };
+
+
+                    const removeOptBtn = document.createElement('button');
+                    removeOptBtn.type = "button";
+                    removeOptBtn.textContent = "x";
+                    removeOptBtn.className = "remove-option-btn";
+                    removeOptBtn.onclick = () => {
+                        formState.services[sIdx].questions[qIdx].options.splice(oIdx, 1);
+                        renderServices();
+                    };
+
+
+                    optRow.appendChild(optInput);
+                    optRow.appendChild(removeOptBtn);
+                    optionsBox.appendChild(optRow);
+                });
+
+
+                const addOptBtn = document.createElement('button');
+                addOptBtn.type = "button";
+                addOptBtn.className = "add-option-btn";
+                addOptBtn.textContent = "Add Option";
+                addOptBtn.onclick = () => {
+                    const qRef = formState.services[sIdx].questions[qIdx];
+                    if (!qRef.options) qRef.options = [];
+                    qRef.options.push("New option");
+                    renderServices();
+                };
+
+
+                optionsBox.appendChild(addOptBtn);
+                qBox.appendChild(optionsBox);
+            }
+
+
+            questionsContainer.appendChild(qBox);
+        });
+
+
+        section.appendChild(questionsContainer);
+        servicesContainer.appendChild(section);
+    });
+}
+
+
+// ------------- DRAG & DROP REORDER -------------
+let draggedServiceIndex = null;
+let draggedQuestionIndex = null;
+
+
+function onDragStart(e) {
+    draggedServiceIndex = parseInt(e.currentTarget.dataset.serviceIndex, 10);
+    draggedQuestionIndex = parseInt(e.currentTarget.dataset.questionIndex, 10);
+}
+
+
+function onDragOver(e) {
+    e.preventDefault();
+}
+
+
+function onDrop(e) {
+    e.preventDefault();
+    const target = e.currentTarget;
+    const targetServiceIndex = parseInt(target.dataset.serviceIndex, 10);
+    const targetQuestionIndex = parseInt(target.dataset.questionIndex, 10);
+
+
+    if (draggedServiceIndex === null || draggedQuestionIndex === null) return;
+
+
+    const sourceQuestions = formState.services[draggedServiceIndex].questions;
+    const [moved] = sourceQuestions.splice(draggedQuestionIndex, 1);
+
+
+    const targetQuestions = formState.services[targetServiceIndex].questions;
+    targetQuestions.splice(targetQuestionIndex, 0, moved);
+
+
+    draggedServiceIndex = null;
+    draggedQuestionIndex = null;
+
+
+    renderServices();
+}
+
+
+// ------------- QUESTION CRUD -------------
+function addQuestion(serviceIndex) {
+    formState.services[serviceIndex].questions.push({
+        text: "New question",
+        type: "short",
+        options: []
+    });
+    renderServices();
+}
+
+
+function deleteQuestion(serviceIndex, questionIndex) {
+    formState.services[serviceIndex].questions.splice(questionIndex, 1);
+    renderServices();
+}
+
+
+// ------------- OVERALL RATING LOGIC -------------
+function setupRating() {
+    const starsContainer = document.getElementById('starsContainer');
+    const label = document.getElementById('ratingLabel');
+    const reason = document.getElementById('ratingReason');
+    const reasonContainer = document.getElementById('reasonContainer');
+
+    // Initialize visibility for reason box
+    if (!formState.overallRating || formState.overallRating >= 3) {
+        reasonContainer.style.display = 'none';
+    } else {
+        reasonContainer.style.display = 'block';
+    }
+
+    starsContainer.querySelectorAll('span').forEach(star => {
+        star.addEventListener('click', () => {
+            const value = parseInt(star.dataset.value, 10);
+            setOverallRating(value);
+        });
+    });
+
+    reason.addEventListener('input', () => {
+        formState.ratingReason = reason.value;
+    });
+}
+
+
+function setOverallRating(value) {
+    const starsContainer = document.getElementById('starsContainer');
+    const label = document.getElementById('ratingLabel');
+    const reasonContainer = document.getElementById('reasonContainer');
+
+    formState.overallRating = value;
+
+    starsContainer.querySelectorAll('span').forEach(star => {
+        const v = parseInt(star.dataset.value, 10);
+        star.classList.toggle('active', v <= value);
+    });
+
+    if (value === 0) {
+        label.textContent = "Rating: not set";
+    } else {
+        label.textContent = "Rating: " + value + " star" + (value > 1 ? "s" : "");
+    }
+
+    // Show reason box only for 1 or 2 stars (mandatory for government)
+    if (value > 0 && value < 3) {
+        reasonContainer.style.display = 'block';
+    } else {
+        reasonContainer.style.display = 'none';
+        formState.ratingReason = "";
+        const reason = document.getElementById('ratingReason');
+        if (reason) reason.value = "";
+    }
+}
+
+
+// ------------- SAVE & SUBMIT -------------
+function saveDraft() {
+    try {
+        formState.name = formNameInput.value || "Government Office Feedback Form";
+        const payload = {
+            ...formState,
+            domain: "government"
+        };
+        const existing = JSON.parse(localStorage.getItem("draftForms") || "[]");
+        const updated = existing.filter(d => d.id !== payload.id);
+        updated.push(payload);
+        localStorage.setItem("draftForms", JSON.stringify(updated));
+        alert("Draft saved locally.");
+    } catch (e) {
+        console.error("Error saving draft:", e);
+        alert("Could not save draft.");
+    }
+}
+
+
+async function submitForm() {
+    formState.name = formNameInput.value || "Government Office Feedback Form";
+    if (!formState.name.trim()) {
+        alert("Please enter a form name.");
+        return;
+    }
+    if (!formState.services || formState.services.length === 0) {
+        alert("No categories selected. Please go back and choose templates.");
+        return;
+    }
+
+    // Government rule: if rating is 1 or 2, reason is mandatory
+    if (formState.overallRating > 0 && formState.overallRating < 3) {
+        if (!formState.ratingReason || !formState.ratingReason.trim()) {
+            alert("Please provide a reason for low overall rating (1 or 2 stars).");
+            return;
+        }
+    }
+
+    const payload = {
+        ...formState,
+        domain: "government"
+    };
+
+
+    try {
+        const res = await fetch("https://web-production-315e.up.railway.app/save-form-template", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+        });
+        if (res.ok) {
+            const data = await res.json();
+            formState.id = data.id;
+            alert("Government form template saved successfully.");
+        } else {
+            alert("Failed to save form template.");
+        }
+    } catch (e) {
+        console.error("Error submitting form:", e);
+        alert("Error while saving form template.");
+    }
+}
+
+
+// ------------- NAVIGATION -------------
+function goBackToTemplates() {
+    window.location.href = "government-templates.html";
+}
+
+
+// ------------- START -------------
+document.addEventListener('DOMContentLoaded', initBuilder);
+</script>
+
+
+</body>
+</html>

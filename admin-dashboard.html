@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Admin Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="admin-home.css">
+</head>
+<body>
+
+<nav class="navbar">
+    <div class="logo">Anonymous Feedback System - Admin</div>
+</nav>
+
+<div class="dashboard-container">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <ul class="sidebar-menu">
+            <li class="sidebar-item active" data-section="home">Dashboard / Home</li>
+            <li class="sidebar-item" data-section="feedbacks">Feedbacks / Responses</li>
+            <li class="sidebar-item" data-section="users">Users</li>
+            <li class="sidebar-item" data-section="forms">Form Management</li>
+            <li class="sidebar-item" data-section="templates">Templates</li>
+            <li class="sidebar-item" data-section="reports">Reports / Analytics</li>
+            <li class="sidebar-item" data-section="settings">Settings</li>
+            <li class="sidebar-item" data-section="help">Help / Support</li>
+            <li class="sidebar-item" data-section="logout">Logout</li>
+        </ul>
+    </aside>
+
+    <!-- Main content -->
+    <main class="dashboard-main">
+        <!-- Home / Dashboard -->
+        <section id="home" class="dash-section active-section">
+            <h2>Dashboard Overview</h2>
+            <div class="cards-row">
+                <div class="stat-card">
+                    <h3>Total Feedbacks</h3>
+                    <p id="totalFeedbacks">0</p>
+                </div>
+                <div class="stat-card">
+                    <h3>Pending Reviews</h3>
+                    <p id="pendingReviews">0</p>
+                </div>
+                <div class="stat-card">
+                    <h3>Flagged Feedbacks</h3>
+                    <p id="flaggedFeedbacks">0</p>
+                </div>
+            </div>
+
+            <div class="section-box">
+                <h3>Recent Submissions</h3>
+                <p class="subtext">Latest 5–10 feedbacks will appear here.</p>
+                <table class="dash-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Date</th>
+                            <th>Category</th>
+                            <th>Rating</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="recentFeedbacksBody">
+                        <tr>
+                            <td colspan="5">No data yet.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Feedbacks -->
+        <section id="feedbacks" class="dash-section">
+            <h2>Feedbacks / Responses</h2>
+            <div class="section-box">
+                <div class="filter-row">
+                    <input type="date" id="filterDate">
+                    <input type="text" id="filterUser" placeholder="User / ID">
+                    <input type="text" id="filterCategory" placeholder="Category">
+                    <select id="filterRating">
+                        <option value="">All Ratings</option>
+                        <option value="5">5 Stars</option>
+                        <option value="4">4 Stars</option>
+                        <option value="3">3 Stars</option>
+                        <option value="2">2 Stars</option>
+                        <option value="1">1 Star</option>
+                    </select>
+                    <button>Filter</button>
+                </div>
+
+                <table class="dash-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Date</th>
+                            <th>Category</th>
+                            <th>Rating</th>
+                            <th>Details</th>
+                            <th>Mark</th>
+                        </tr>
+                    </thead>
+                    <tbody id="allFeedbacksBody">
+                        <tr>
+                            <td colspan="6">Feedback list will appear here.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Users -->
+        <section id="users" class="dash-section">
+            <h2>Users</h2>
+            <div class="section-box">
+                <p class="subtext">Anonymous tracking without revealing identity.</p>
+                <table class="dash-table">
+                    <thead>
+                        <tr>
+                            <th>User ID</th>
+                            <th>Total Submissions</th>
+                            <th>Last Submission</th>
+                        </tr>
+                    </thead>
+                    <tbody id="usersBody">
+                        <tr>
+                            <td colspan="3">User summary will appear here.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Form Management -->
+        <section id="forms" class="dash-section">
+            <h2>Form Management</h2>
+            <div class="section-box">
+                <div class="forms-header-row">
+                    <!-- UPDATED: added onclick -->
+                    <button type="button" onclick="openCreateForm()">Create New Form</button>
+                </div>
+                <table class="dash-table">
+                    <thead>
+                        <tr>
+                            <th>Form ID</th>
+                            <th>Title</th>
+                            <th>Status</th>
+                            <th>Submissions</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="formsBody">
+                        <tr>
+                            <td colspan="5">Forms will appear here.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Templates -->
+        <section id="templates" class="dash-section">
+            <h2>Templates</h2>
+            <div class="section-box">
+                <p class="subtext">Choose a template by domain and customize or use it directly.</p>
+
+                <div class="templates-grid">
+                    <div class="template-card" title="Customize or use the inbuilt forms to collect unbiased feedbacks from students, parents, and teachers.">
+                        <h3>Schools</h3>
+                        <p>
+                            Design feedback forms for students, teachers, and parents to improve classroom experience,
+                            teaching quality, and infrastructure.
+                        </p>
+                        <button type="button" onclick="openSchoolTemplates()">Open School Templates</button>
+                    </div>
+
+                    <div class="template-card" title="Create course, faculty, and campus life feedbacks tailored for colleges and universities.">
+                        <h3>Colleges</h3>
+                        <p>
+                            Build forms for course feedback, faculty evaluation, campus facilities, and event reviews,
+                            focused on higher education environments.
+                        </p>
+                        <button type="button" onclick="openCollegeTemplates()">Open College Templates</button>
+                    </div>
+
+                    <div class="template-card" title="Use ready-made forms to gather anonymous feedback from employees and teams in corporate environments.">
+                        <h3>Corporates</h3>
+                        <p>
+                            Set up forms for employee satisfaction, manager review, team health checks, and
+                            workplace culture without revealing identities.
+                        </p>
+                        <button type="button" onclick="openCorporateTemplates()">Open Corporate Templates</button>
+                    </div>
+
+                    <div class="template-card" title="Collect citizen feedback on public services, schemes, and government offices with ready-to-use templates.">
+                        <h3>Government Services</h3>
+                        <p>
+                            Prepare forms to capture citizen opinions on public services, schemes,
+                            grievance redressal, and department performance.
+                        </p>
+                        <button type="button" onclick="openGovernmentTemplates()">Open Government Templates</button>
+                    </div>
+                </div>
+
+                <div class="drafts-link-row">
+                    <button type="button" onclick="openDrafts()" class="view-drafts-btn neon-btn">
+                        View Saved Drafts
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Reports / Analytics -->
+        <section id="reports" class="dash-section">
+            <h2>Reports / Analytics</h2>
+            <div class="section-box">
+                <p class="subtext">
+                    Graphs and statistics about feedback trends will be shown here.
+                </p>
+                <ul class="simple-list">
+                    <li>Ratings over time.</li>
+                    <li>Category-wise feedback distribution.</li>
+                    <li>Export data (CSV/PDF).</li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- Settings -->
+        <section id="settings" class="dash-section">
+            <h2>Settings</h2>
+            <div class="section-box">
+                <h3>Admin Profile</h3>
+                <form class="settings-form">
+                    <input type="text" placeholder="Full Name">
+                    <input type="password" placeholder="New Password">
+                    <input type="password" placeholder="Confirm New Password">
+                    <button type="button">Update Profile</button>
+                </form>
+
+                <h3 style="margin-top: 25px;">Notification Settings</h3>
+                <form class="settings-form">
+                    <label>
+                        <input type="checkbox"> Email alert for new feedback
+                    </label>
+                    <label>
+                        <input type="checkbox"> Weekly summary report
+                    </label>
+                    <button type="button">Save Preferences</button>
+                </form>
+            </div>
+        </section>
+
+        <!-- Help / Support -->
+        <section id="help" class="dash-section">
+            <h2>Help / Support</h2>
+            <div class="section-box">
+                <h3>Quick Guide</h3>
+                <ul class="simple-list">
+                    <li>Use "Feedbacks" tab to review submissions.</li>
+                    <li>Manage and update forms from "Form Management".</li>
+                    <li>Use "Reports" for analytics and exports.</li>
+                </ul>
+
+                <h3 style="margin-top: 20px;">Contact Support</h3>
+                <p class="subtext">For issues, contact: admin-support@example.com</p>
+            </div>
+        </section>
+
+        <!-- Logout -->
+        <section id="logout" class="dash-section">
+            <h2>Logout</h2>
+            <div class="section-box">
+                <p class="subtext">Click below to return to the login page.</p>
+                <button id="logoutBtn">Logout</button>
+            </div>
+        </section>
+    </main>
+</div>
+
+<script>
+const items = document.querySelectorAll('.sidebar-item');
+const sections = document.querySelectorAll('.dash-section');
+
+items.forEach(item => {
+    item.addEventListener('click', () => {
+        const target = item.getAttribute('data-section');
+
+        items.forEach(i => i.classList.remove('active'));
+        sections.forEach(sec => sec.classList.remove('active-section'));
+
+        item.classList.add('active');
+        document.getElementById(target).classList.add('active-section');
+    });
+});
+
+document.getElementById('logoutBtn').addEventListener('click', () => {
+    window.location.href = 'login.html';
+});
+
+function openSchoolTemplates() {
+    window.location.href = "school-templates.html";
+}
+
+function openCollegeTemplates() {
+    window.location.href = "college-templates.html";
+}
+
+function openCorporateTemplates() {
+    window.location.href = "corporate-templates.html";
+}
+
+function openGovernmentTemplates() {
+    window.location.href = "government-templates.html";
+}
+
+function openDrafts() {
+    window.location.href = "drafts.html";
+}
+
+/* NEW: open Create New Form builder page */
+function openCreateForm() {
+    window.location.href = "create-form.html";
+}
+</script>
+
+</body>
+</html>

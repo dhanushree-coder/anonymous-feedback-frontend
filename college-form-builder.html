@@ -1,0 +1,959 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>College Form Builder</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="form-builder.css">
+</head>
+<body>
+
+<nav class="navbar">
+    <div class="logo">Anonymous Feedback System - College Form Builder</div>
+</nav>
+
+<div class="form-builder-container">
+    <header class="form-builder-header">
+        <h2>Customize College Feedback Form</h2>
+        <p class="subtext">
+            Edit questions for each selected facility. You can add, update, delete, reorder questions and modify answer types and options.
+        </p>
+        <div class="form-name-row">
+            <label for="formName">Form name:</label>
+            <input type="text" id="formName" placeholder="Untitled College Form">
+        </div>
+        <button class="back-btn" onclick="goBackToTemplates()">← Back to Templates</button>
+    </header>
+
+    <main id="servicesContainer">
+        <!-- Facility sections injected by JS -->
+    </main>
+
+    <section class="overall-rating-section">
+        <h3>Overall Rating</h3>
+        <p class="subtext">Please set the overall rating question (required, 1–5 stars).</p>
+
+        <div class="stars-container" id="starsContainer">
+            <span data-value="1">★</span>
+            <span data-value="2">★</span>
+            <span data-value="3">★</span>
+            <span data-value="4">★</span>
+            <span data-value="5">★</span>
+        </div>
+        <p id="ratingLabel" class="subtext">Rating: not set</p>
+
+        <div id="reasonContainer" class="reason-container">
+            <label for="ratingReason">Reason for low rating (optional but recommended for 1–2 stars):</label>
+            <textarea id="ratingReason" placeholder="Please enter the reason..."></textarea>
+        </div>
+    </section>
+
+    <section class="form-builder-actions">
+        <button class="secondary-btn" onclick="saveDraft()">Save Draft</button>
+        <button class="primary-btn" onclick="submitForm()">Submit Form</button>
+    </section>
+</div>
+
+<script>
+let urlParams = new URLSearchParams(window.location.search);
+let templateIdFromUrl = urlParams.get("id");
+
+let config = null;
+try {
+    const raw = localStorage.getItem("collegeFormConfig");
+    if (raw) {
+        config = JSON.parse(raw);
+    }
+} catch (e) {
+    console.error("Error reading college config:", e);
+}
+
+const servicesContainer = document.getElementById('servicesContainer');
+const formNameInput = document.getElementById('formName');
+
+/**
+ * College facility-wise master question bank.
+ * Each facility has 25+ UNIQUE questions, not reused across facilities.
+ * Types:
+ *  - multiple: MCQ with options
+ *  - short: open text
+ *  - rating: 1–5 scale
+ */
+const facilityQuestionBankCollege = {
+    "Teaching & Faculty Quality": [
+        { text: "How would you rate the overall quality of teaching by your faculty members?", type: "rating", options: [] },
+        { text: "How clearly do faculty explain complex concepts in your courses?", type: "rating", options: [] },
+        { text: "How knowledgeable are faculty in the subjects they teach?", type: "rating", options: [] },
+        { text: "How well do faculty connect theory with real-world applications?", type: "rating", options: [] },
+        { text: "How approachable are faculty members outside class hours for academic doubts?", type: "rating", options: [] },
+        { text: "How fair are faculty in evaluating assignments and exams?", type: "rating", options: [] },
+        { text: "How timely is the feedback provided on assignments and tests?", type: "rating", options: [] },
+        { text: "How effectively do faculty use teaching aids (slides, board, models, etc.)?", type: "rating", options: [] },
+        { text: "How well do faculty encourage student participation and questions in class?", type: "rating", options: [] },
+        { text: "To what extent do faculty complete the syllabus within the stipulated time?", type: "rating", options: [] },
+        { text: "How regularly do faculty take classes as per the timetable?", type: "rating", options: [] },
+        { text: "How often do faculty provide guidance for competitive exams or higher studies?", type: "rating", options: [] },
+        { text: "How respectful are faculty in their interactions with students?", type: "rating", options: [] },
+        { text: "How effective are faculty in handling slow learners?", type: "rating", options: [] },
+        { text: "How effective are faculty in engaging high-performing students?", type: "rating", options: [] },
+        { text: "How satisfied are you with the availability of faculty during consultation hours?", type: "rating", options: [] },
+        { text: "How well do faculty integrate practical examples/case studies into teaching?", type: "rating", options: [] },
+        { text: "How effectively do faculty manage classroom time and pace of teaching?", type: "rating", options: [] },
+        { text: "How often do faculty update content with recent developments in the field?", type: "rating", options: [] },
+        { text: "How satisfied are you with the overall professionalism of faculty members?", type: "rating", options: [] },
+        { text: "What do you appreciate most about the teaching quality in your department?", type: "short", options: [] },
+        { text: "What specific improvements would you suggest to enhance teaching quality?", type: "short", options: [] },
+        { text: "Have you faced any issues with bias or favoritism in teaching or evaluation?", type: "short", options: [] },
+        { text: "How satisfied are you with faculty support for doubts before exams?", type: "rating", options: [] },
+        { text: "Would you recommend this college based on the teaching and faculty quality alone?", type: "multiple", options: ["Definitely yes", "Probably yes", "Not sure", "Probably no", "Definitely no"] },
+        { text: "Please share any additional comments about teaching and faculty quality.", type: "short", options: [] }
+    ],
+
+    "Academic Curriculum & Evaluation": [
+        { text: "How relevant is the curriculum to current industry and academic standards?", type: "rating", options: [] },
+        { text: "How well does the curriculum balance theory and practical components?", type: "rating", options: [] },
+        { text: "How clearly are the course objectives communicated at the beginning of each course?", type: "rating", options: [] },
+        { text: "How appropriate is the course load per semester for your capacity?", type: "rating", options: [] },
+        { text: "How fair and transparent are the internal assessment methods?", type: "rating", options: [] },
+        { text: "How fair and transparent are the end-semester examination methods?", type: "rating", options: [] },
+        { text: "How clear are the evaluation criteria for assignments and projects?", type: "rating", options: [] },
+        { text: "How well do assessments test your understanding rather than rote memory?", type: "rating", options: [] },
+        { text: "How satisfied are you with the number of electives offered in your program?", type: "rating", options: [] },
+        { text: "How satisfied are you with the flexibility to choose interdisciplinary courses?", type: "rating", options: [] },
+        { text: "How timely are internal marks and exam results communicated to students?", type: "rating", options: [] },
+        { text: "How useful are continuous assessments (assignments, quizzes, presentations) in your learning?", type: "rating", options: [] },
+        { text: "How satisfied are you with the alignment of curriculum to your career goals?", type: "rating", options: [] },
+        { text: "How effectively do project courses contribute to your practical learning?", type: "rating", options: [] },
+        { text: "How well does the curriculum incorporate emerging technologies or trends in your field?", type: "rating", options: [] },
+        { text: "How often is the curriculum updated to reflect changes in industry and academia?", type: "rating", options: [] },
+        { text: "How clearly are rules related to grading, promotion, and attendance explained?", type: "rating", options: [] },
+        { text: "How fair is the moderation or revaluation process when you raise concerns?", type: "rating", options: [] },
+        { text: "How satisfied are you with the balance between core and elective subjects?", type: "rating", options: [] },
+        { text: "To what extent does the curriculum encourage self-learning and research?", type: "rating", options: [] },
+        { text: "Which part of the curriculum do you find most beneficial for your future plans?", type: "short", options: [] },
+        { text: "Which part of the curriculum do you think needs immediate revision or removal?", type: "short", options: [] },
+        { text: "Suggest one new course or topic you would like to see added to the curriculum.", type: "short", options: [] },
+        { text: "How would you rate your overall satisfaction with curriculum and evaluation?", type: "rating", options: [] },
+        { text: "Would you like more project-based or skill-based courses in the program?", type: "multiple", options: ["Yes, many more", "Yes, a few more", "Current level is enough", "Prefer fewer", "Not sure"] },
+        { text: "Please share any additional comments on curriculum and evaluation.", type: "short", options: [] }
+    ],
+
+    "Classroom & Learning Environment": [
+        { text: "How comfortable is the classroom seating arrangement for long sessions?", type: "rating", options: [] },
+        { text: "How adequate is the lighting in classrooms for reading and taking notes?", type: "rating", options: [] },
+        { text: "How comfortable is the classroom temperature and ventilation?", type: "rating", options: [] },
+        { text: "How effective is the audio quality (microphone, speakers) in classrooms?", type: "rating", options: [] },
+        { text: "How clear and visible are the boards or screens from most seats?", type: "rating", options: [] },
+        { text: "How clean are the classrooms on a daily basis?", type: "rating", options: [] },
+        { text: "How often do you face disturbances like noise from outside the classroom?", type: "rating", options: [] },
+        { text: "How adequate is the availability of functional projectors or smart boards?", type: "rating", options: [] },
+        { text: "How sufficient are power outlets in classrooms for charging devices?", type: "rating", options: [] },
+        { text: "How conducive are classrooms for group discussions and interactive activities?", type: "rating", options: [] },
+        { text: "How accessible are classrooms for students with physical disabilities?", type: "rating", options: [] },
+        { text: "How satisfied are you with classroom cleanliness of desks, chairs, and floors?", type: "rating", options: [] },
+        { text: "How satisfied are you with the availability of dustbins and waste disposal in classrooms?", type: "rating", options: [] },
+        { text: "How safe do you feel in the classroom in case of emergency situations?", type: "rating", options: [] },
+        { text: "How well maintained are classroom furniture (chairs, desks, podiums)?", type: "rating", options: [] },
+        { text: "How satisfied are you with the availability of writing materials like markers or chalk?", type: "rating", options: [] },
+        { text: "How often are classroom facilities repaired when issues are reported?", type: "rating", options: [] },
+        { text: "How pleased are you with the overall ambience of classrooms for learning?", type: "rating", options: [] },
+        { text: "Do you feel the classroom environment helps you concentrate better in lectures?", type: "rating", options: [] },
+        { text: "Which classroom-related factor affects your learning the most?", type: "short", options: [] },
+        { text: "What changes in classroom facilities would most improve your learning experience?", type: "short", options: [] },
+        { text: "Have you ever avoided a particular classroom due to poor conditions?", type: "multiple", options: ["Yes, frequently", "Yes, sometimes", "Rarely", "Never"] },
+        { text: "How accessible are notice boards or display areas inside or near classrooms?", type: "rating", options: [] },
+        { text: "How satisfied are you with the classroom schedule and allocation (no clashes, enough time)?", type: "rating", options: [] },
+        { text: "Overall, how would you rate the classroom and learning environment in this college?", type: "rating", options: [] },
+        { text: "Please share any additional comments about classrooms and learning environment.", type: "short", options: [] }
+    ],
+
+    "Laboratory Facilities": [
+        { text: "How adequate is the number of laboratories available for your program?", type: "rating", options: [] },
+        { text: "How sufficient is the availability of lab equipment during practical sessions?", type: "rating", options: [] },
+        { text: "How well maintained are the laboratory instruments and machines?", type: "rating", options: [] },
+        { text: "How often do you face non-working or faulty equipment in labs?", type: "rating", options: [] },
+        { text: "How clean and safe are laboratory workspaces and benches?", type: "rating", options: [] },
+        { text: "How clearly are lab safety rules communicated and enforced?", type: "rating", options: [] },
+        { text: "How adequate is the availability of safety equipment (gloves, goggles, first aid, fire safety)?", type: "rating", options: [] },
+        { text: "How supportive and available are lab instructors/technicians during practicals?", type: "rating", options: [] },
+        { text: "How sufficient is the lab timing allotted for each practical session?", type: "rating", options: [] },
+        { text: "How helpful are lab manuals and instructions in guiding your experiments?", type: "rating", options: [] },
+        { text: "How often are lab experiments aligned with current industry or research practices?", type: "rating", options: [] },
+        { text: "How easy is it to access labs outside scheduled hours for project or extra practice?", type: "rating", options: [] },
+        { text: "How well is lab stock (chemicals, components, tools) replenished when running low?", type: "rating", options: [] },
+        { text: "How safe do you feel when handling hazardous materials or equipment in labs?", type: "rating", options: [] },
+        { text: "How effectively do lab sessions reinforce your theoretical learning?", type: "rating", options: [] },
+        { text: "How satisfied are you with the lab-to-student ratio during practical sessions?", type: "rating", options: [] },
+        { text: "How adequate are the computing facilities (PCs, software, internet) in computer labs?", type: "rating", options: [] },
+        { text: "How frequently are lab facilities upgraded or modernized?", type: "rating", options: [] },
+        { text: "Which laboratory-related aspect do you find most helpful for your learning?", type: "short", options: [] },
+        { text: "Which laboratory-related issue causes you the most difficulty?", type: "short", options: [] },
+        { text: "Have lab safety incidents or near misses been handled appropriately?", type: "short", options: [] },
+        { text: "How satisfied are you with the availability of project labs for final-year or major projects?", type: "rating", options: [] },
+        { text: "How would you rate your overall experience with laboratory facilities?", type: "rating", options: [] },
+        { text: "Would you like more industry-standard equipment or tools in your labs?", type: "multiple", options: ["Yes, definitely", "Yes, to some extent", "Current level is sufficient", "Not needed"] },
+        { text: "Please share any additional comments or suggestions about laboratory facilities.", type: "short", options: [] }
+    ],
+
+    "Library & Learning Resources": [
+        { text: "How adequate is the collection of textbooks relevant to your courses in the library?", type: "rating", options: [] },
+        { text: "How adequate is the collection of reference books and advanced materials?", type: "rating", options: [] },
+        { text: "How easily can you find required books using the catalog or indexing system?", type: "rating", options: [] },
+        { text: "How helpful are library staff in assisting you with locating resources?", type: "rating", options: [] },
+        { text: "How sufficient are the library opening hours for your study needs?", type: "rating", options: [] },
+        { text: "How comfortable is the reading area in terms of seating and ambience?", type: "rating", options: [] },
+        { text: "How quiet and disturbance-free is the library environment for focused study?", type: "rating", options: [] },
+        { text: "How adequate are digital resources such as e-books, journals, and databases?", type: "rating", options: [] },
+        { text: "How easy is remote/off-campus access to online library resources?", type: "rating", options: [] },
+        { text: "How convenient is the process of borrowing and returning books?", type: "rating", options: [] },
+        { text: "How reasonable are the library rules on issuing limits and renewal periods?", type: "rating", options: [] },
+        { text: "How satisfied are you with the availability of course-related question banks or previous papers?", type: "rating", options: [] },
+        { text: "How satisfied are you with the cleanliness and maintenance of library spaces?", type: "rating", options: [] },
+        { text: "How adequate are computer terminals and internet access in the library?", type: "rating", options: [] },
+        { text: "How frequently do you find the required books already issued to others?", type: "rating", options: [] },
+        { text: "How helpful are library orientation or training sessions, if any, for new students?", type: "rating", options: [] },
+        { text: "How satisfied are you with the availability of group study spaces in or near the library?", type: "rating", options: [] },
+        { text: "How often does the library acquire new titles or editions in your subject area?", type: "rating", options: [] },
+        { text: "Which library service do you find most useful for your studies?", type: "short", options: [] },
+        { text: "Which library-related issue do you face most frequently?", type: "short", options: [] },
+        { text: "Have you faced any difficulties with fines, due dates, or communication from the library?", type: "short", options: [] },
+        { text: "How would you rate your overall satisfaction with library and learning resources?", type: "rating", options: [] },
+        { text: "Would you like more digital-first resources over physical books?", type: "multiple", options: ["Yes, mostly digital", "Balanced digital and physical", "Mostly physical", "No preference"] },
+        { text: "How important is the library to your overall learning in this college?", type: "rating", options: [] },
+        { text: "Please share any additional comments on library and learning resources.", type: "short", options: [] }
+    ],
+
+    "Research & Innovation Support": [
+        { text: "How aware are you of research and innovation opportunities offered by the college?", type: "rating", options: [] },
+        { text: "How easy is it to approach faculty for guidance on research projects?", type: "rating", options: [] },
+        { text: "How adequate are the facilities (labs, software, equipment) for student research work?", type: "rating", options: [] },
+        { text: "How supportive is the college in encouraging student participation in conferences or seminars?", type: "rating", options: [] },
+        { text: "How often are research talks, workshops, or guest lectures organized?", type: "rating", options: [] },
+        { text: "How accessible are research funding schemes or mini-grant opportunities for students?", type: "rating", options: [] },
+        { text: "How helpful are faculty in guiding students to publish papers or file patents?", type: "rating", options: [] },
+        { text: "How supportive is the institution towards student innovation or startup ideas?", type: "rating", options: [] },
+        { text: "How clear are the processes for applying for institutional research support?", type: "rating", options: [] },
+        { text: "How adequate is the access to journals and databases for research purposes?", type: "rating", options: [] },
+        { text: "How satisfied are you with the mentorship provided for research projects?", type: "rating", options: [] },
+        { text: "How much encouragement do you receive to participate in hackathons, competitions, or innovation events?", type: "rating", options: [] },
+        { text: "How reasonable are timelines and requirements for completing research-based courses or projects?", type: "rating", options: [] },
+        { text: "How fairly are research and innovation contributions recognized or rewarded?", type: "rating", options: [] },
+        { text: "How often do you get exposure to ongoing research work within your department?", type: "rating", options: [] },
+        { text: "How satisfied are you with cross-department collaboration opportunities for research?", type: "rating", options: [] },
+        { text: "How adequate are spaces such as innovation labs or maker spaces, if available?", type: "rating", options: [] },
+        { text: "What type of research or innovation support do you find most helpful?", type: "short", options: [] },
+        { text: "What are the biggest obstacles you face in pursuing research or innovation activities?", type: "short", options: [] },
+        { text: "Have you ever dropped a research idea due to lack of support or resources?", type: "multiple", options: ["Yes, multiple times", "Yes, once", "No, but I hesitated", "No, never"] },
+        { text: "How would you rate the overall research culture among students in this college?", type: "rating", options: [] },
+        { text: "How would you rate the overall research culture among faculty in this college?", type: "rating", options: [] },
+        { text: "How satisfied are you with opportunities to collaborate with industry on projects?", type: "rating", options: [] },
+        { text: "Would you recommend this college to a friend specifically for research opportunities?", type: "multiple", options: ["Definitely yes", "Probably yes", "Not sure", "Probably no", "Definitely no"] },
+        { text: "Please share any additional comments or suggestions on research and innovation support.", type: "short", options: [] }
+    ],
+
+    "Internship & Industry Exposure": [
+        { text: "How clearly does the college communicate available internship opportunities?", type: "rating", options: [] },
+        { text: "How supportive is the placement or training cell in helping you find internships?", type: "rating", options: [] },
+        { text: "How relevant are the internships offered to your field of study?", type: "rating", options: [] },
+        { text: "How sufficient is the number of internship opportunities available to students?", type: "rating", options: [] },
+        { text: "How effective is the college in building industry tie-ups for internships?", type: "rating", options: [] },
+        { text: "How clear are the guidelines related to internship duration, credits, and evaluation?", type: "rating", options: [] },
+        { text: "How helpful is faculty guidance before, during, and after internships?", type: "rating", options: [] },
+        { text: "How adequately does the college support documentation like NOCs and letters for internships?", type: "rating", options: [] },
+        { text: "How satisfied are you with pre-internship training (soft skills, tools, domain knowledge)?", type: "rating", options: [] },
+        { text: "How effectively are internship learnings integrated back into academic discussions?", type: "rating", options: [] },
+        { text: "How fair and transparent is the internal evaluation of internships?", type: "rating", options: [] },
+        { text: "How often does the college invite industry professionals for talks or interactions?", type: "rating", options: [] },
+        { text: "How satisfied are you with opportunities for industry visits or field trips?", type: "rating", options: [] },
+        { text: "How frequently do you get to work on live or industry-sponsored projects?", type: "rating", options: [] },
+        { text: "How effectively are internship experiences recognized or showcased (seminars, reports, posters)?", type: "rating", options: [] },
+        { text: "How easy is it to get clarifications when discrepancies occur between college and company requirements?", type: "rating", options: [] },
+        { text: "Do you feel internships arranged via the college genuinely add value to your career profile?", type: "rating", options: [] },
+        { text: "How many internships have you completed so far during your course?", type: "multiple", options: ["None", "One", "Two", "Three or more"] },
+        { text: "Describe your best internship experience facilitated by the college.", type: "short", options: [] },
+        { text: "Describe the main challenges you faced during any internship related to support from the college.", type: "short", options: [] },
+        { text: "How satisfied are you with post-internship feedback or reflection sessions, if any?", type: "rating", options: [] },
+        { text: "How would you rate the overall quality of industry exposure provided by the college?", type: "rating", options: [] },
+        { text: "Would you like the college to make internships mandatory or more structured?", type: "multiple", options: ["Yes, mandatory internships", "Yes, more structured but optional", "Current setup is fine", "Prefer fewer formal requirements"] },
+        { text: "How likely are you to recommend this college based on its internship and industry exposure?", type: "rating", options: [] },
+        { text: "Please share any additional comments or suggestions on internships and industry exposure.", type: "short", options: [] }
+    ],
+
+    "Placement & Career Support": [
+        { text: "How satisfied are you with the information provided about placement processes?", type: "rating", options: [] },
+        { text: "How effective are pre-placement training sessions (aptitude, reasoning, coding, etc.)?", type: "rating", options: [] },
+        { text: "How helpful are soft-skills and interview-preparation sessions?", type: "rating", options: [] },
+        { text: "How adequately does the college communicate upcoming placement drives and deadlines?", type: "rating", options: [] },
+        { text: "How diverse are the companies that visit the campus in terms of sectors and roles?", type: "rating", options: [] },
+        { text: "How satisfied are you with the average compensation/packages offered on campus?", type: "rating", options: [] },
+        { text: "How satisfied are you with the roles/designations offered through campus placements?", type: "rating", options: [] },
+        { text: "How supportive are placement officers in addressing your queries and concerns?", type: "rating", options: [] },
+        { text: "How fairly are eligibility criteria and shortlisting rules applied for companies?", type: "rating", options: [] },
+        { text: "How effectively does the college track and share placement statistics with students?", type: "rating", options: [] },
+        { text: "How useful are alumni interactions for understanding career paths and placements?", type: "rating", options: [] },
+        { text: "How satisfied are you with off-campus placement support, if any?", type: "rating", options: [] },
+        { text: "How adequately does the curriculum prepare you for technical rounds of placements?", type: "rating", options: [] },
+        { text: "How adequately does the curriculum prepare you for HR and behavioral rounds?", type: "rating", options: [] },
+        { text: "How satisfied are you with resume-building guidance provided by the college?", type: "rating", options: [] },
+        { text: "How satisfied are you with communication regarding policy changes in placements?", type: "rating", options: [] },
+        { text: "How transparent is the allocation of opportunities when multiple companies visit?", type: "rating", options: [] },
+        { text: "Have you ever missed a placement opportunity due to unclear communication from the college?", type: "multiple", options: ["Yes, multiple times", "Yes, once", "No"] },
+        { text: "What aspect of placement support do you find most beneficial?", type: "short", options: [] },
+        { text: "What is the biggest challenge you faced with the placement process?", type: "short", options: [] },
+        { text: "How would you rate the overall effectiveness of placement and career support?", type: "rating", options: [] },
+        { text: "Would you recommend this college to juniors based on placement outcomes?", type: "multiple", options: ["Definitely yes", "Probably yes", "Not sure", "Probably no", "Definitely no"] },
+        { text: "How satisfied are you with career guidance for higher studies (India/abroad)?", type: "rating", options: [] },
+        { text: "How satisfied are you with support for alternative careers (startups, freelancing, civil services)?", type: "rating", options: [] },
+        { text: "Please share any additional comments on placements and career support.", type: "short", options: [] }
+    ],
+
+    "Hostel & Accommodation": [
+        { text: "How comfortable are the hostel rooms in terms of space and layout?", type: "rating", options: [] },
+        { text: "How clean are the hostel rooms and common areas maintained?", type: "rating", options: [] },
+        { text: "How adequate are bathroom and toilet facilities in the hostel?", type: "rating", options: [] },
+        { text: "How reliable is the water supply in the hostel?", type: "rating", options: [] },
+        { text: "How reliable is the power supply and backup in the hostel?", type: "rating", options: [] },
+        { text: "How safe do you feel inside the hostel premises during day and night?", type: "rating", options: [] },
+        { text: "How satisfied are you with the hostel security arrangements (guards, entry logs, CCTV)?", type: "rating", options: [] },
+        { text: "How approachable and supportive are hostel wardens and supervisors?", type: "rating", options: [] },
+        { text: "How clearly are hostel rules and regulations communicated to you?", type: "rating", options: [] },
+        { text: "How reasonable are hostel rules regarding in/out timings and visitors?", type: "rating", options: [] },
+        { text: "How adequate is the provision of furniture (beds, cupboards, study tables) in rooms?", type: "rating", options: [] },
+        { text: "How satisfied are you with cleanliness of drinking water facilities in the hostel?", type: "rating", options: [] },
+        { text: "How satisfied are you with hostel wi-fi or internet connectivity?", type: "rating", options: [] },
+        { text: "How effectively are complaints about hostel maintenance addressed?", type: "rating", options: [] },
+        { text: "How comfortable are you with room allotment policies and processes?", type: "rating", options: [] },
+        { text: "How satisfied are you with hostel common areas (TV room, study rooms, recreation)?", type: "rating", options: [] },
+        { text: "How well does the hostel environment support your study and rest needs?", type: "rating", options: [] },
+        { text: "Have you ever felt unsafe or harassed in the hostel environment?", type: "multiple", options: ["Yes", "No", "Prefer not to say"] },
+        { text: "What do you like most about the hostel facilities?", type: "short", options: [] },
+        { text: "What hostel-related issue do you face most frequently?", type: "short", options: [] },
+        { text: "How fairly are hostel fees and charges justified for the facilities provided?", type: "rating", options: [] },
+        { text: "How would you rate your overall satisfaction with hostel and accommodation?", type: "rating", options: [] },
+        { text: "Would you recommend the hostel to future students of this college?", type: "multiple", options: ["Definitely yes", "Probably yes", "Not sure", "Probably no", "Definitely no"] },
+        { text: "How satisfied are you with measures to prevent ragging or bullying in hostels?", type: "rating", options: [] },
+        { text: "How satisfied are you with availability of quiet study spaces in the hostel?", type: "rating", options: [] },
+        { text: "Please share any additional comments on hostel and accommodation.", type: "short", options: [] }
+    ],
+
+    "Food & Canteen Services": [
+        { text: "How would you rate the overall quality of food served in the canteen or mess?", type: "rating", options: [] },
+        { text: "How satisfied are you with the taste of the food provided?", type: "rating", options: [] },
+        { text: "How satisfied are you with the hygiene standards in food preparation areas?", type: "rating", options: [] },
+        { text: "How clean are the dining areas, tables, and utensils?", type: "rating", options: [] },
+        { text: "How adequate is the variety of food options available daily?", type: "rating", options: [] },
+        { text: "How well are vegetarian options provided and maintained?", type: "rating", options: [] },
+        { text: "How well are non-vegetarian options provided (if applicable)?", type: "rating", options: [] },
+        { text: "How reasonably priced do you find the food items?", type: "rating", options: [] },
+        { text: "How satisfied are you with portion sizes for the price paid?", type: "rating", options: [] },
+        { text: "How satisfied are you with the availability of healthy food choices?", type: "rating", options: [] },
+        { text: "How often are special dietary needs (allergies, medical conditions) accommodated?", type: "rating", options: [] },
+        { text: "How reasonable are the canteen or mess timings for your schedule?", type: "rating", options: [] },
+        { text: "How courteous and responsive is the canteen staff towards students?", type: "rating", options: [] },
+        { text: "How often do you experience long queues or delays in getting food?", type: "rating", options: [] },
+        { text: "How satisfied are you with cleanliness of drinking water provision in the canteen?", type: "rating", options: [] },
+        { text: "How frequently is the menu updated or changed to avoid monotony?", type: "rating", options: [] },
+        { text: "Have you ever experienced food-related illness or discomfort after eating on campus?", type: "multiple", options: ["Yes, multiple times", "Yes, once or twice", "No"] },
+        { text: "What do you like most about the food or canteen services on campus?", type: "short", options: [] },
+        { text: "What is the most critical improvement needed in food or canteen services?", type: "short", options: [] },
+        { text: "How would you rate the availability of snacks and beverages between main meals?", type: "rating", options: [] },
+        { text: "How satisfied are you with the payment methods available (cashless, coupons, etc.)?", type: "rating", options: [] },
+        { text: "How would you rate your overall satisfaction with food and canteen services?", type: "rating", options: [] },
+        { text: "Would you recommend the campus food services to a new student?", type: "multiple", options: ["Definitely yes", "Probably yes", "Not sure", "Probably no", "Definitely no"] },
+        { text: "How satisfied are you with complaint redressal related to food quality or hygiene?", type: "rating", options: [] },
+        { text: "Please share any additional comments on food and canteen services.", type: "short", options: [] }
+    ],
+
+    "Sports & Fitness Facilities": [
+        { text: "How adequate are the sports grounds and courts available on campus?", type: "rating", options: [] },
+        { text: "How maintained are the sports grounds and courts (cleanliness, markings, safety)?", type: "rating", options: [] },
+        { text: "How sufficient is the quantity and quality of sports equipment available?", type: "rating", options: [] },
+        { text: "How easy is it to access sports facilities during your free time?", type: "rating", options: [] },
+        { text: "How satisfied are you with the gym or fitness center facilities (if available)?", type: "rating", options: [] },
+        { text: "How qualified and supportive are the physical education instructors or coaches?", type: "rating", options: [] },
+        { text: "How frequently are intra-college sports events conducted?", type: "rating", options: [] },
+        { text: "How frequently are inter-college or external sports tournaments encouraged?", type: "rating", options: [] },
+        { text: "How fairly are students selected for various sports teams?", type: "rating", options: [] },
+        { text: "How adequately does the timetable allow time for regular sports or fitness activity?", type: "rating", options: [] },
+        { text: "How safe do you feel while using sports facilities in terms of injuries and supervision?", type: "rating", options: [] },
+        { text: "How well are injuries managed (first aid, medical help) during sports activities?", type: "rating", options: [] },
+        { text: "How satisfied are you with separate sports provisions for girls and boys where needed?", type: "rating", options: [] },
+        { text: "How inclusive are sports activities for beginners and non-experienced players?", type: "rating", options: [] },
+        { text: "How satisfied are you with the encouragement you receive to participate in sports?", type: "rating", options: [] },
+        { text: "How often do you personally use sports or fitness facilities in a typical week?", type: "multiple", options: ["Never", "1–2 times", "3–4 times", "5 or more times"] },
+        { text: "What do you like most about the sports and fitness facilities?", type: "short", options: [] },
+        { text: "What is the biggest limitation or problem with sports and fitness facilities here?", type: "short", options: [] },
+        { text: "How would you rate the overall importance given to sports in this college?", type: "rating", options: [] },
+        { text: "How would you rate your overall satisfaction with sports and fitness facilities?", type: "rating", options: [] },
+        { text: "Would you recommend this college to a sports-oriented student based on sports support?", type: "multiple", options: ["Definitely yes", "Probably yes", "Not sure", "Probably no", "Definitely no"] },
+        { text: "How satisfied are you with changing rooms and related facilities near sports areas?", type: "rating", options: [] },
+        { text: "How satisfied are you with floodlights or facility availability during late hours, if applicable?", type: "rating", options: [] },
+        { text: "How satisfied are you with the communication of sports schedules and events?", type: "rating", options: [] },
+        { text: "Please share any additional comments on sports and fitness facilities.", type: "short", options: [] }
+    ],
+
+    "Extra-Curricular & Student Clubs": [
+        { text: "How aware are you of the different clubs and extra-curricular groups available on campus?", type: "rating", options: [] },
+        { text: "How easy is it to join clubs or extra-curricular activities that interest you?", type: "rating", options: [] },
+        { text: "How diverse are the types of clubs (technical, cultural, arts, social, etc.)?", type: "rating", options: [] },
+        { text: "How welcoming and inclusive are clubs to new members?", type: "rating", options: [] },
+        { text: "How regularly do clubs conduct meetings or activities?", type: "rating", options: [] },
+        { text: "How effectively are club events communicated to students?", type: "rating", options: [] },
+        { text: "How supportive is the college administration in organizing extra-curricular events?", type: "rating", options: [] },
+        { text: "How sufficient are budgets or resources allocated to student clubs?", type: "rating", options: [] },
+        { text: "How fair and transparent are selections for club leadership roles?", type: "rating", options: [] },
+        { text: "How well do club activities contribute to your personal or professional development?", type: "rating", options: [] },
+        { text: "How adequately does the college recognize or reward extra-curricular achievements?", type: "rating", options: [] },
+        { text: "How satisfied are you with the availability of spaces for club meetings and rehearsals?", type: "rating", options: [] },
+        { text: "How balanced is the academic schedule with respect to participation in extra-curricular activities?", type: "rating", options: [] },
+        { text: "How safe and comfortable do you feel participating in late-evening events on campus?", type: "rating", options: [] },
+        { text: "How often do you personally participate in extra-curricular events?", type: "multiple", options: ["Never", "Rarely", "Occasionally", "Frequently"] },
+        { text: "What type of club or activity do you enjoy the most on campus?", type: "short", options: [] },
+        { text: "What barrier keeps you from participating more in clubs or extra-curriculars?", type: "short", options: [] },
+        { text: "How would you rate the quality of major events (fests, cultural programs, technical fests)?", type: "rating", options: [] },
+        { text: "How inclusive are events with respect to language, gender, and cultural sensitivity?", type: "rating", options: [] },
+        { text: "How would you rate your overall satisfaction with extra-curricular and club activities?", type: "rating", options: [] },
+        { text: "Would you recommend this college based on its clubs and extra-curricular opportunities?", type: "multiple", options: ["Definitely yes", "Probably yes", "Not sure", "Probably no", "Definitely no"] },
+        { text: "How satisfied are you with faculty coordinators’ support for student clubs?", type: "rating", options: [] },
+        { text: "How satisfied are you with sponsorship or funding opportunities for club events?", type: "rating", options: [] },
+        { text: "How satisfied are you with opportunities to showcase your talents on campus?", type: "rating", options: [] },
+        { text: "Please share any additional comments about extra-curricular activities and student clubs.", type: "short", options: [] }
+    ],
+
+    "Discipline & Campus Safety": [
+        { text: "How clearly are college rules and disciplinary policies communicated to students?", type: "rating", options: [] },
+        { text: "How fairly are disciplinary rules applied across students?", type: "rating", options: [] },
+        { text: "How safe do you feel on campus during daytime?", type: "rating", options: [] },
+        { text: "How safe do you feel on campus during evening or night hours?", type: "rating", options: [] },
+        { text: "How adequate are security measures such as guards, ID checks, and CCTV surveillance?", type: "rating", options: [] },
+        { text: "How effective are anti-ragging measures implemented by the college?", type: "rating", options: [] },
+        { text: "How comfortable do you feel reporting incidents of ragging, harassment, or misconduct?", type: "rating", options: [] },
+        { text: "How responsive is the administration when safety or discipline issues are reported?", type: "rating", options: [] },
+        { text: "How satisfied are you with the functioning of grievance or anti-ragging committees?", type: "rating", options: [] },
+        { text: "How effectively are bullying, discrimination, or harassment incidents handled on campus?", type: "rating", options: [] },
+        { text: "How disciplined is the general classroom and campus environment during working hours?", type: "rating", options: [] },
+        { text: "How fair are penalties or warnings issued when rules are broken?", type: "rating", options: [] },
+        { text: "How satisfied are you with measures to control substance abuse or illegal activities on campus?", type: "rating", options: [] },
+        { text: "How safe do you feel while commuting between hostel and academic blocks?", type: "rating", options: [] },
+        { text: "How safe do you feel in parking areas and isolated parts of the campus?", type: "rating", options: [] },
+        { text: "Have you ever personally faced physical or verbal harassment on campus?", type: "multiple", options: ["Yes", "No", "Prefer not to say"] },
+        { text: "If you raised a safety or discipline concern, how satisfied were you with the outcome?", type: "short", options: [] },
+        { text: "What would you suggest to improve campus safety and discipline?", type: "short", options: [] },
+        { text: "How would you rate the overall discipline among students on campus?", type: "rating", options: [] },
+        { text: "How would you rate the overall discipline among staff and faculty on campus?", type: "rating", options: [] },
+        { text: "How satisfied are you with separate safety provisions for female students where applicable?", type: "rating", options: [] },
+        { text: "How promptly are emergency situations (accidents, fights, health emergencies) handled?", type: "rating", options: [] },
+        { text: "How would you rate your overall sense of safety and security in this college?", type: "rating", options: [] },
+        { text: "Would you recommend this college as a safe place to study?", type: "multiple", options: ["Definitely yes", "Probably yes", "Not sure", "Probably no", "Definitely no"] },
+        { text: "Please share any additional comments on discipline and campus safety.", type: "short", options: [] }
+    ],
+
+    "Infrastructure & Campus Facilities": [
+        { text: "How would you rate the overall appearance and maintenance of campus buildings?", type: "rating", options: [] },
+        { text: "How adequate are the number of classrooms and lecture halls for all batches?", type: "rating", options: [] },
+        { text: "How well maintained are corridors, staircases, and common areas?", type: "rating", options: [] },
+        { text: "How sufficient are seating spaces in open areas, lawns, or student common zones?", type: "rating", options: [] },
+        { text: "How adequate are indoor spaces like auditoriums and seminar halls?", type: "rating", options: [] },
+        { text: "How satisfied are you with the cleanliness and maintenance of washrooms across campus?", type: "rating", options: [] },
+        { text: "How adequate are parking facilities for two-wheelers and four-wheelers?", type: "rating", options: [] },
+        { text: "How safe and organized are parking spaces on campus?", type: "rating", options: [] },
+        { text: "How adequate is campus lighting in the evenings and at night?", type: "rating", options: [] },
+        { text: "How satisfied are you with availability of drinking water points across campus?", type: "rating", options: [] },
+        { text: "How effectively is campus greenery and landscaping maintained?", type: "rating", options: [] },
+        { text: "How adequate are signboards and directions to help navigate the campus?", type: "rating", options: [] },
+        { text: "How accessible is the campus infrastructure for students with disabilities?", type: "rating", options: [] },
+        { text: "How adequately are maintenance issues (leaks, broken fixtures, etc.) resolved?", type: "rating", options: [] },
+        { text: "How satisfied are you with cleanliness during peak times (fests, exams, admissions)?", type: "rating", options: [] },
+        { text: "How satisfied are you with indoor seating or lounge areas for informal study or breaks?", type: "rating", options: [] },
+        { text: "How satisfied are you with the availability of dustbins and waste management on campus?", type: "rating", options: [] },
+        { text: "How frequently do you notice unresolved infrastructure problems (damaged furniture, broken tiles, etc.)?", type: "rating", options: [] },
+        { text: "What aspect of campus infrastructure do you like the most?", type: "short", options: [] },
+        { text: "What is the most urgent infrastructure improvement needed on your campus?", type: "short", options: [] },
+        { text: "How would you rate the overall campus environment in terms of aesthetics and comfort?", type: "rating", options: [] },
+        { text: "Would you describe the campus infrastructure as modern, adequate, or outdated?", type: "multiple", options: ["Modern", "Mostly modern", "Adequate", "Somewhat outdated", "Outdated"] },
+        { text: "How satisfied are you with the availability of quiet spaces for self-study outside classrooms?", type: "rating", options: [] },
+        { text: "How satisfied are you with the condition of lifts, ramps, and accessibility facilities, if available?", type: "rating", options: [] },
+        { text: "Please share any additional comments on infrastructure and campus facilities.", type: "short", options: [] }
+    ],
+
+    "Administrative & Office Support": [
+        { text: "How easy is it to approach the college office for routine queries or work?", type: "rating", options: [] },
+        { text: "How courteous and helpful are administrative staff when you interact with them?", type: "rating", options: [] },
+        { text: "How clearly are procedures for various administrative tasks communicated to students?", type: "rating", options: [] },
+        { text: "How satisfied are you with the time taken to get bonafide or study certificates?", type: "rating", options: [] },
+        { text: "How satisfied are you with the process of collecting marksheets or transcripts?", type: "rating", options: [] },
+        { text: "How satisfied are you with the process for fee payment and receipts?", type: "rating", options: [] },
+        { text: "How effectively does the office handle corrections or updates (name, address, records)?", type: "rating", options: [] },
+        { text: "How transparent is the communication about fee structures and due dates?", type: "rating", options: [] },
+        { text: "How responsive is the office to email or phone queries from students?", type: "rating", options: [] },
+        { text: "How effective is the handling of scholarship or financial aid documentation?", type: "rating", options: [] },
+        { text: "How satisfied are you with the administration of exam registration and hall ticket processes?", type: "rating", options: [] },
+        { text: "How fair and clear are rules related to leaves of absence or medical exemptions?", type: "rating", options: [] },
+        { text: "How satisfied are you with the grievance redressal process for administrative issues?", type: "rating", options: [] },
+        { text: "How often have you had to visit the office multiple times for the same work?", type: "rating", options: [] },
+        { text: "How often does miscommunication or lack of clarity from administration affect you?", type: "rating", options: [] },
+        { text: "What administrative process is most efficient in your experience?", type: "short", options: [] },
+        { text: "What administrative process causes you the most difficulty or delays?", type: "short", options: [] },
+        { text: "Have you ever faced rude or unprofessional behavior from administrative staff?", type: "multiple", options: ["Yes", "No", "Prefer not to say"] },
+        { text: "How would you rate the overall efficiency of administrative and office support?", type: "rating", options: [] },
+        { text: "How would you rate your overall satisfaction with interactions in the college office?", type: "rating", options: [] },
+        { text: "Would you suggest more digital or self-service options for administrative tasks?", type: "multiple", options: ["Yes, many more", "Yes, a few more", "Current level is enough", "Prefer offline processes"] },
+        { text: "How satisfied are you with communication of holiday lists, schedule changes, and official notices?", type: "rating", options: [] },
+        { text: "How satisfied are you with support during admission or re-admission processes?", type: "rating", options: [] },
+        { text: "How satisfied are you with support during passing-out, convocation, or migration processes?", type: "rating", options: [] },
+        { text: "Please share any additional comments on administrative and office support.", type: "short", options: [] }
+    ],
+
+    "Communication & Student Support": [
+        { text: "How effectively are important announcements communicated to you (via notice boards, email, apps, etc.)?", type: "rating", options: [] },
+        { text: "How timely is the communication of schedule changes, exam dates, and deadlines?", type: "rating", options: [] },
+        { text: "How clear and understandable are official messages and circulars?", type: "rating", options: [] },
+        { text: "How satisfied are you with communication from your department about academic matters?", type: "rating", options: [] },
+        { text: "How satisfied are you with communication from central administration about policies and rules?", type: "rating", options: [] },
+        { text: "How easy is it to know whom to contact for different types of issues?", type: "rating", options: [] },
+        { text: "How satisfied are you with mentoring or class advisor support for academic/personal issues?", type: "rating", options: [] },
+        { text: "How available are counselling services (academic, psychological, career) when needed?", type: "rating", options: [] },
+        { text: "How comfortable do you feel discussing personal or mental health concerns with support staff?", type: "rating", options: [] },
+        { text: "How satisfied are you with help for students facing language or learning difficulties?", type: "rating", options: [] },
+        { text: "How satisfied are you with support for first-generation or economically weaker students?", type: "rating", options: [] },
+        { text: "How effectively are student suggestions or feedback acknowledged and acted upon?", type: "rating", options: [] },
+        { text: "How often do you receive follow-up information after raising a concern or query?", type: "rating", options: [] },
+        { text: "How satisfied are you with communication related to co-curricular and extra-curricular activities?", type: "rating", options: [] },
+        { text: "How inclusive is communication in terms of language and accessibility?", type: "rating", options: [] },
+        { text: "What is the most reliable communication channel for you (notice board, WhatsApp, email, portal)?", type: "short", options: [] },
+        { text: "Describe a situation where communication from the college helped you significantly.", type: "short", options: [] },
+        { text: "Describe a situation where lack of communication caused you a problem.", type: "short", options: [] },
+        { text: "How would you rate the overall responsiveness of student support services?", type: "rating", options: [] },
+        { text: "How would you rate your overall satisfaction with communication and student support?", type: "rating", options: [] },
+        { text: "Would you prefer more centralized digital communication (single app/portal) for all updates?", type: "multiple", options: ["Yes", "Maybe", "No preference", "No"] },
+        { text: "How satisfied are you with communication and support for students with special needs?", type: "rating", options: [] },
+        { text: "How satisfied are you with support in case of family emergencies or extended absences?", type: "rating", options: [] },
+        { text: "How satisfied are you with the college’s responsiveness during crisis situations (health, natural events, etc.)?", type: "rating", options: [] },
+        { text: "Please share any additional comments on communication and student support.", type: "short", options: [] }
+    ],
+
+    "Transport Services": [
+        { text: "How adequate are the number of buses or transport options provided by the college?", type: "rating", options: [] },
+        { text: "How satisfied are you with the coverage of routes for college buses?", type: "rating", options: [] },
+        { text: "How punctual are the transport services in the morning?", type: "rating", options: [] },
+        { text: "How punctual are the transport services when leaving the campus?", type: "rating", options: [] },
+        { text: "How comfortable are the buses or vehicles in terms of seating and space?", type: "rating", options: [] },
+        { text: "How safe do you feel while traveling in college transport?", type: "rating", options: [] },
+        { text: "How courteous and responsible are the drivers and support staff?", type: "rating", options: [] },
+        { text: "How reasonable are the transport fees with respect to distance and service quality?", type: "rating", options: [] },
+        { text: "How clearly are transport rules and timings communicated to students?", type: "rating", options: [] },
+        { text: "How effectively are delays or route changes communicated to students?", type: "rating", options: [] },
+        { text: "How adequately are safety measures like speed control and emergency readiness followed?", type: "rating", options: [] },
+        { text: "How satisfied are you with cleanliness and maintenance of buses?", type: "rating", options: [] },
+        { text: "How frequently do you experience overcrowding in college transport?", type: "rating", options: [] },
+        { text: "How satisfied are you with the drop and pick-up points assigned?", type: "rating", options: [] },
+        { text: "How satisfied are you with the coordination between transport schedule and class timings?", type: "rating", options: [] },
+        { text: "Do you primarily use college transport, public transport, or private vehicles?", type: "multiple", options: ["College transport", "Public transport", "Own/Shared vehicle", "Walk/Other"] },
+        { text: "What do you like most about the college transport services?", type: "short", options: [] },
+        { text: "What is the biggest issue you face with transport services?", type: "short", options: [] },
+        { text: "How would you rate the overall quality of transport services provided by the college?", type: "rating", options: [] },
+        { text: "Would you recommend using college transport to new students?", type: "multiple", options: ["Definitely yes", "Probably yes", "Not sure", "Probably no", "Definitely no"] },
+        { text: "How satisfied are you with safety measures for female students using transport?", type: "rating", options: [] },
+        { text: "How satisfied are you with communication regarding transport during exams or special events?", type: "rating", options: [] },
+        { text: "How satisfied are you with grievance handling related to transport issues?", type: "rating", options: [] },
+        { text: "How satisfied are you with bus timing flexibility when college events extend beyond normal hours?", type: "rating", options: [] },
+        { text: "Please share any additional comments on transport services.", type: "short", options: [] }
+    ],
+
+    "Health & Medical Facilities": [
+        { text: "How aware are you of the health center or medical room facilities on campus?", type: "rating", options: [] },
+        { text: "How easily accessible is the medical facility during college hours?", type: "rating", options: [] },
+        { text: "How adequately staffed is the medical facility (doctor, nurse, first-aid personnel)?", type: "rating", options: [] },
+        { text: "How satisfied are you with the availability of basic medicines and first-aid supplies?", type: "rating", options: [] },
+        { text: "How satisfied are you with the response time during medical emergencies on campus?", type: "rating", options: [] },
+        { text: "How clearly are medical support procedures communicated to students?", type: "rating", options: [] },
+        { text: "How satisfied are you with arrangements for ambulance or referral to hospitals?", type: "rating", options: [] },
+        { text: "How clean and hygienic is the medical room or health center?", type: "rating", options: [] },
+        { text: "How comfortable do you feel discussing health issues with the medical staff?", type: "rating", options: [] },
+        { text: "How satisfied are you with health awareness programs or camps organized by the college?", type: "rating", options: [] },
+        { text: "How adequately does the college support students with chronic medical conditions?", type: "rating", options: [] },
+        { text: "How satisfied are you with support for mental health or counselling needs?", type: "rating", options: [] },
+        { text: "How frequently have you or your classmates used the campus medical facilities?", type: "multiple", options: ["Never", "Once", "A few times", "Many times"] },
+        { text: "Describe a positive experience you had with campus health or medical support.", type: "short", options: [] },
+        { text: "Describe any difficulty you faced in getting timely medical help on campus.", type: "short", options: [] },
+        { text: "How satisfied are you with health and safety precautions during outbreaks (like flu, pandemics)?", type: "rating", options: [] },
+        { text: "How satisfied are you with cleanliness and hygiene standards during large events on campus?", type: "rating", options: [] },
+        { text: "How would you rate your overall satisfaction with health and medical facilities on campus?", type: "rating", options: [] },
+        { text: "Would you prefer more proactive health check-ups or wellness programs?", type: "multiple", options: ["Yes, regularly", "Sometimes", "No preference", "No"] },
+        { text: "How satisfied are you with coordination between hostel and medical facilities during emergencies?", type: "rating", options: [] },
+        { text: "How satisfied are you with support for vaccination or preventive healthcare initiatives?", type: "rating", options: [] },
+        { text: "How satisfied are you with privacy and confidentiality in medical interactions?", type: "rating", options: [] },
+        { text: "How satisfied are you with availability of sanitary and hygiene products on campus?", type: "rating", options: [] },
+        { text: "How satisfied are you with water and sanitation hygiene contributing to overall health?", type: "rating", options: [] },
+        { text: "Please share any additional comments on health and medical facilities.", type: "short", options: [] }
+    ],
+
+    "Digital Facilities & Online Services": [
+        { text: "How reliable is the campus Wi-Fi connectivity in academic blocks?", type: "rating", options: [] },
+        { text: "How reliable is the campus Wi-Fi in hostels and common areas?", type: "rating", options: [] },
+        { text: "How adequate is the internet speed for academic activities (research, LMS, online tools)?", type: "rating", options: [] },
+        { text: "How easy is it to log in and use the college’s online portals or LMS?", type: "rating", options: [] },
+        { text: "How clearly are login details and help for digital platforms communicated?", type: "rating", options: [] },
+        { text: "How satisfied are you with the stability of digital platforms during online exams or submissions?", type: "rating", options: [] },
+        { text: "How user-friendly are the interfaces of college portals or LMS?", type: "rating", options: [] },
+        { text: "How effectively are online class links or content shared with you?", type: "rating", options: [] },
+        { text: "How satisfied are you with availability of recorded lectures or digital notes, if provided?", type: "rating", options: [] },
+        { text: "How satisfied are you with online assignment submission and grading systems?", type: "rating", options: [] },
+        { text: "How satisfied are you with online fee payment or application systems, if available?", type: "rating", options: [] },
+        { text: "How promptly are technical issues with accounts or portals resolved?", type: "rating", options: [] },
+        { text: "How secure do you feel your personal data is on college digital platforms?", type: "rating", options: [] },
+        { text: "How often do you experience login failures or downtime on critical systems?", type: "rating", options: [] },
+        { text: "How satisfied are you with access to licensed software or cloud tools via the college?", type: "rating", options: [] },
+        { text: "How satisfied are you with communication of updates or maintenance downtime for digital services?", type: "rating", options: [] },
+        { text: "What digital facility or tool provided by the college do you find most useful?", type: "short", options: [] },
+        { text: "What digital issue affects your academic work the most?", type: "short", options: [] },
+        { text: "How would you rate your overall satisfaction with digital facilities and online services?", type: "rating", options: [] },
+        { text: "Would you like more services to move online (forms, requests, applications)?", type: "multiple", options: ["Yes, most services", "Some more services", "Current level is enough", "Prefer offline"] },
+        { text: "How satisfied are you with support for remote learning when required (e.g., emergencies)?", type: "rating", options: [] },
+        { text: "How satisfied are you with integration between different digital systems (LMS, attendance, exam, fees)?", type: "rating", options: [] },
+        { text: "How satisfied are you with digital communication channels (email, app notifications, SMS)?", type: "rating", options: [] },
+        { text: "How satisfied are you with online exam proctoring or integrity measures, if applicable?", type: "rating", options: [] },
+        { text: "Please share any additional comments on digital facilities and online services.", type: "short", options: [] }
+    ],
+
+    "Overall College Experience": [
+        { text: "How satisfied are you with your overall academic experience at this college?", type: "rating", options: [] },
+        { text: "How satisfied are you with your overall non-academic experience (hostel, events, campus life)?", type: "rating", options: [] },
+        { text: "How satisfied are you with the opportunities for personal growth and leadership?", type: "rating", options: [] },
+        { text: "How satisfied are you with the opportunities for peer interaction and networking?", type: "rating", options: [] },
+        { text: "How well does the college support a healthy balance between academics and extracurriculars?", type: "rating", options: [] },
+        { text: "How welcoming and inclusive is the campus environment for students from different backgrounds?", type: "rating", options: [] },
+        { text: "How satisfied are you with the respect shown to students by staff and faculty?", type: "rating", options: [] },
+        { text: "How satisfied are you with the overall academic pressure and workload?", type: "rating", options: [] },
+        { text: "How satisfied are you with the support you receive in times of personal difficulty?", type: "rating", options: [] },
+        { text: "How satisfied are you with overall communication from the institution on key matters?", type: "rating", options: [] },
+        { text: "How satisfied are you with the value for money of the education and services provided?", type: "rating", options: [] },
+        { text: "How likely are you to recommend this college to a friend or relative?", type: "rating", options: [] },
+        { text: "If you had a chance to choose again, how likely are you to select this college?", type: "multiple", options: ["Definitely would", "Probably would", "Not sure", "Probably would not", "Definitely would not"] },
+        { text: "What has been the best part of your college experience so far?", type: "short", options: [] },
+        { text: "What has been the most challenging part of your college experience?", type: "short", options: [] },
+        { text: "Do you feel your college education is preparing you well for your future plans?", type: "rating", options: [] },
+        { text: "How satisfied are you with opportunities to give feedback and see visible changes?", type: "rating", options: [] },
+        { text: "How satisfied are you with the overall support you receive from peers, faculty, and staff?", type: "rating", options: [] },
+        { text: "How proud do you feel to be a student of this college?", type: "rating", options: [] },
+        { text: "How satisfied are you with the overall campus culture and student community?", type: "rating", options: [] },
+        { text: "What one change would most improve your overall experience in this college?", type: "short", options: [] },
+        { text: "What should the college definitely continue doing because it works well for students?", type: "short", options: [] },
+        { text: "How satisfied are you with the way student concerns are listened to by the management?", type: "rating", options: [] },
+        { text: "How satisfied are you with alumni engagement and connection opportunities, if any?", type: "rating", options: [] },
+        { text: "Please share any additional comments about your overall experience at this college.", type: "short", options: [] }
+    ]
+};
+
+// Generic fallback if an unexpected facility name appears
+const genericDefaultQuestionsTemplate = [
+    { text: "Overall, how would you rate this facility?", type: "rating", options: [] },
+    { text: "What did you like most about this facility?", type: "short", options: [] },
+    { text: "What improvements would you suggest for this facility?", type: "short", options: [] }
+];
+
+let formState = {
+    id: null,
+    domain: "college",
+    name: "Untitled College Form",
+    services: [],
+    overallRating: 0,
+    ratingReason: ""
+};
+
+async function initBuilder() {
+    if (templateIdFromUrl) {
+        try {
+            const res = await fetch("https://web-production-315e.up.railway.app/load-form-template?id=" + templateIdFromUrl);
+            if (res.ok) {
+                const loaded = await res.json();
+                formState = loaded;
+                if (!formState.domain) formState.domain = "college";
+            }
+        } catch (e) {
+            console.warn("Could not load college template by id:", e);
+        }
+    } else {
+        if (!config || !config.services || config.services.length === 0) {
+            servicesContainer.innerHTML = "<p class='subtext'>No facilities selected. Please go back and choose templates.</p>";
+        } else {
+            formState.services = config.services.map(serviceName => {
+                const bank = facilityQuestionBankCollege[serviceName] || genericDefaultQuestionsTemplate;
+                const clonedQuestions = JSON.parse(JSON.stringify(bank));
+                return {
+                    name: serviceName,
+                    questions: clonedQuestions
+                };
+            });
+        }
+    }
+
+    formNameInput.value = formState.name || "Untitled College Form";
+    formNameInput.addEventListener('input', () => {
+        formState.name = formNameInput.value;
+    });
+
+    renderServices();
+    setupRating();
+
+    if (formState.overallRating > 0) {
+        setOverallRating(formState.overallRating);
+        if (formState.ratingReason) {
+            document.getElementById('ratingReason').value = formState.ratingReason;
+        }
+    }
+}
+
+function renderServices() {
+    servicesContainer.innerHTML = "";
+    formState.services.forEach((service, sIdx) => {
+        const section = document.createElement('section');
+        section.className = 'service-section';
+
+        const header = document.createElement('div');
+        header.className = 'service-header-row';
+        const title = document.createElement('h3');
+        title.textContent = service.name;
+        const addBtn = document.createElement('button');
+        addBtn.textContent = "Add Question";
+        addBtn.type = "button";
+        addBtn.onclick = () => addQuestion(sIdx);
+
+        header.appendChild(title);
+        header.appendChild(addBtn);
+        section.appendChild(header);
+
+        const questionsContainer = document.createElement('div');
+        questionsContainer.className = 'questions-container';
+
+        service.questions.forEach((q, qIdx) => {
+            const qBox = document.createElement('div');
+            qBox.className = 'question-box';
+            qBox.draggable = true;
+            qBox.dataset.serviceIndex = sIdx;
+            qBox.dataset.questionIndex = qIdx;
+
+            qBox.addEventListener('dragstart', onDragStart);
+            qBox.addEventListener('dragover', onDragOver);
+            qBox.addEventListener('drop', onDrop);
+
+            const qRow = document.createElement('div');
+            qRow.className = 'question-row';
+
+            const dragHandle = document.createElement('span');
+            dragHandle.className = 'drag-handle';
+            dragHandle.textContent = "≡";
+
+            const qInput = document.createElement('input');
+            qInput.type = 'text';
+            qInput.value = q.text;
+            qInput.oninput = (e) => {
+                formState.services[sIdx].questions[qIdx].text = e.target.value;
+            };
+
+            const typeSelect = document.createElement('select');
+            typeSelect.className = 'type-select';
+            ["multiple", "short", "rating"].forEach(t => {
+                const opt = document.createElement('option');
+                opt.value = t;
+                opt.textContent = (t === "multiple" ? "Multiple Choice" :
+                                   t === "short" ? "Short Answer" : "Rating (1–5)");
+                if (q.type === t) opt.selected = true;
+                typeSelect.appendChild(opt);
+            });
+            typeSelect.onchange = (e) => {
+                formState.services[sIdx].questions[qIdx].type = e.target.value;
+                if (e.target.value === "short" || e.target.value === "rating") {
+                    formState.services[sIdx].questions[qIdx].options = [];
+                } else if (e.target.value === "multiple" && (!q.options || q.options.length === 0)) {
+                    formState.services[sIdx].questions[qIdx].options = ["Excellent", "Good", "Average", "Poor"];
+                }
+                renderServices();
+            };
+
+            const deleteBtn = document.createElement('button');
+            deleteBtn.type = 'button';
+            deleteBtn.textContent = "Delete";
+            deleteBtn.className = 'delete-question-btn';
+            deleteBtn.onclick = () => deleteQuestion(sIdx, qIdx);
+
+            qRow.appendChild(dragHandle);
+            qRow.appendChild(qInput);
+            qRow.appendChild(typeSelect);
+            qRow.appendChild(deleteBtn);
+            qBox.appendChild(qRow);
+
+            if (q.type === "multiple") {
+                const optionsRow = document.createElement('div');
+                optionsRow.className = 'options-row';
+
+                q.options.forEach((opt, optIdx) => {
+                    const optInput = document.createElement('input');
+                    optInput.type = 'text';
+                    optInput.value = opt;
+                    optInput.oninput = (e) => {
+                        formState.services[sIdx].questions[qIdx].options[optIdx] = e.target.value;
+                    };
+                    optionsRow.appendChild(optInput);
+                });
+
+                qBox.appendChild(optionsRow);
+            } else if (q.type === "short") {
+                const info = document.createElement('p');
+                info.className = 'subtext';
+                info.textContent = "Short answer field (open text).";
+                qBox.appendChild(info);
+            } else if (q.type === "rating") {
+                const info = document.createElement('p');
+                info.className = 'subtext';
+                info.textContent = "Rating scale 1–5 for this question.";
+                qBox.appendChild(info);
+            }
+
+            questionsContainer.appendChild(qBox);
+        });
+
+        section.appendChild(questionsContainer);
+        servicesContainer.appendChild(section);
+    });
+}
+
+function addQuestion(serviceIndex) {
+    formState.services[serviceIndex].questions.push({
+        text: "New question",
+        type: "multiple",
+        options: ["Excellent", "Good", "Average", "Poor"]
+    });
+    renderServices();
+}
+
+function deleteQuestion(serviceIndex, questionIndex) {
+    formState.services[serviceIndex].questions.splice(questionIndex, 1);
+    renderServices();
+}
+
+// Drag-and-drop
+let dragData = null;
+
+function onDragStart(e) {
+    const sIndex = e.currentTarget.dataset.serviceIndex;
+    const qIndex = e.currentTarget.dataset.questionIndex;
+    dragData = { serviceIndex: parseInt(sIndex), questionIndex: parseInt(qIndex) };
+    e.dataTransfer.effectAllowed = "move";
+}
+
+function onDragOver(e) {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+}
+
+function onDrop(e) {
+    e.preventDefault();
+    if (!dragData) return;
+
+    const targetS = parseInt(e.currentTarget.dataset.serviceIndex);
+    const targetQ = parseInt(e.currentTarget.dataset.questionIndex);
+
+    if (dragData.serviceIndex !== targetS) return;
+
+    const arr = formState.services[targetS].questions;
+    const moved = arr.splice(dragData.questionIndex, 1)[0];
+    arr.splice(targetQ, 0, moved);
+
+    dragData = null;
+    renderServices();
+}
+
+// Overall rating
+const starsContainer = document.getElementById('starsContainer');
+const ratingLabel = document.getElementById('ratingLabel');
+const reasonContainer = document.getElementById('reasonContainer');
+const ratingReason = document.getElementById('ratingReason');
+
+function setupRating() {
+    starsContainer.querySelectorAll('span').forEach(star => {
+        star.addEventListener('click', () => {
+            const val = parseInt(star.getAttribute('data-value'));
+            setOverallRating(val);
+        });
+    });
+}
+
+function setOverallRating(val) {
+    formState.overallRating = val;
+    starsContainer.querySelectorAll('span').forEach(s => {
+        const sv = parseInt(s.getAttribute('data-value'));
+        s.classList.toggle('active-star', sv <= val);
+    });
+    ratingLabel.textContent = "Rating: " + val + " / 5";
+
+    if (val <= 2) {
+        reasonContainer.style.display = 'block';
+    } else {
+        reasonContainer.style.display = 'none';
+        ratingReason.value = "";
+        formState.ratingReason = "";
+    }
+}
+
+ratingReason.addEventListener('input', () => {
+    formState.ratingReason = ratingReason.value;
+});
+
+// Save Draft / Submit
+async function saveDraft() {
+    try {
+        const payload = { ...formState, status: "draft" };
+        const res = await fetch("https://web-production-315e.up.railway.app/save-form-template", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (res.ok && data.id) {
+            formState.id = data.id;
+            alert("Draft saved successfully.");
+        } else {
+            alert(data.error || "Failed to save draft.");
+        }
+    } catch (e) {
+        console.error(e);
+        alert("Failed to save draft.");
+    }
+}
+
+async function submitForm() {
+    if (formState.overallRating === 0) {
+        alert("Please set an overall rating before submitting.");
+        return;
+    }
+
+    try {
+        const payload = { ...formState, status: "final" };
+        const res = await fetch("https://web-production-315e.up.railway.app/save-form-template", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (res.ok && data.id) {
+            formState.id = data.id;
+            alert("College form template saved as final.");
+        } else {
+            alert(data.error || "Failed to submit form template.");
+        }
+    } catch (e) {
+        console.error(e);
+        alert("Failed to submit form template.");
+    }
+}
+
+function goBackToTemplates() {
+    window.location.href = "college-templates.html";
+}
+
+initBuilder();
+</script>
+
+</body>
+</html>

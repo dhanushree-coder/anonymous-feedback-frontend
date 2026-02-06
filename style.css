@@ -1,0 +1,227 @@
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600&display=swap');
+
+/* ===== GLOBAL RESET ===== */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Orbitron', sans-serif;
+    background-color: black; /* you can replace with bg image later */
+    color: #00ff99;
+    background: url("./Assets/New\ Project\ 99\ [5A4CD52].png") center/cover no-repeat fixed;
+}
+
+/* ===== NAVBAR ===== */
+.navbar {
+    position: fixed;
+    top: 0;
+    width: 100%;
+    height: 70px;
+    background: rgba(0, 0, 0, 0.85);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 40px;
+    box-shadow: 0 0 15px #00ff99;
+    z-index: 1000;
+}
+
+.logo {
+    font-size: 1.2rem;
+    font-weight: 600;
+}
+
+.nav-links {
+    list-style: none;
+    display: flex;
+    gap: 25px;
+}
+
+.nav-links li a {
+    text-decoration: none;
+    color: #00ff99;
+    transition: 0.3s;
+}
+
+.nav-links li a:hover {
+    color: #ff00ff;
+}
+
+/* ===== HOME PAGE ===== */
+.home-container {
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding-top: 70px; /* prevents navbar overlap */
+}
+
+.home-content {
+    max-width: 700px;
+    padding: 50px;
+    text-align: center;
+    background: rgba(0, 0, 0, 0.6);
+    border-radius: 15px;
+    box-shadow: 0 0 20px #00ff99;
+}
+
+.home-content h1 {
+    font-size: 2.5rem;
+    margin-bottom: 20px;
+}
+
+.home-content p {
+    font-size: 1.2rem;
+    line-height: 1.6;
+}
+
+/* ===== FEATURES PAGE ===== */
+.features-container {
+    min-height: 100vh;
+    padding-top: 120px;
+    padding-left: 50px;
+    padding-right: 50px;
+    text-align: center;
+}
+
+.features-container h2 {
+    font-size: 2.3rem;
+    margin-bottom: 40px;
+}
+
+.features-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 30px;
+}
+
+/* ===== FEATURE BOX ===== */
+.feature-box {
+    background: rgba(0, 0, 0, 0.7);
+    padding: 30px;
+    border-radius: 15px;
+    box-shadow: 0 0 15px #00ff99;
+    transition: transform 0.3s, box-shadow 0.3s;
+}
+
+.feature-box h3 {
+    margin-bottom: 15px;
+    color: #00ff99;
+}
+
+.feature-box p {
+    font-size: 1rem;
+    line-height: 1.5;
+    color: #e0fff3;
+}
+
+.feature-box:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 25px #00ff99;
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 768px) {
+    .navbar {
+        flex-direction: column;
+        height: auto;
+        padding: 15px;
+    }
+
+    .nav-links {
+        flex-direction: column;
+        gap: 15px;
+        margin-top: 10px;
+    }
+
+    .home-content {
+        margin: 20px;
+        padding: 30px;
+    }
+}
+/* ===== AUTH PAGES (LOGIN / FORGOT / RESET) ===== */
+
+.auth-container {
+    min-height: 100vh;
+    padding-top: 70px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.auth-box {
+    width: 100%;
+    max-width: 420px;
+    padding: 40px;
+    background: rgba(0, 0, 0, 0.7);
+    border-radius: 15px;
+    box-shadow: 0 0 20px #00ff99;
+    text-align: center;
+}
+
+.auth-box h2 {
+    margin-bottom: 30px;
+}
+
+.auth-box form {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.auth-box input {
+    padding: 14px;
+    border-radius: 8px;
+    border: 2px solid #00ff99;
+    background: transparent;
+    color: white;
+    outline: none;
+}
+
+.auth-box button {
+    padding: 14px;
+    background: #00ff99;
+    color: black;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+.auth-box button:hover {
+    box-shadow: 0 0 15px #00ff99;
+}
+
+.password-box {
+    position: relative;
+}
+
+.password-box input {
+    width: 100%;
+}
+
+.toggle {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    cursor: pointer;
+    font-size: 0.85rem;
+    color: #00ff99;
+}
+
+.link {
+    margin-top: 10px;
+}
+
+.link a {
+    color: #00ff99;
+    text-decoration: none;
+}
+
+.link a:hover {
+    text-decoration: underline;
+}

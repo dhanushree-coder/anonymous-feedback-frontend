@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Publish Form</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .publish-container {
+            max-width: 600px;
+            margin: 40px auto;
+        }
+        .publish-box {
+            background-color: #111;
+            padding: 20px 25px;
+            border-radius: 8px;
+        }
+        .publish-box h2 {
+            margin-bottom: 10px;
+        }
+        .publish-link-box {
+            margin-top: 15px;
+            padding: 10px;
+            background-color: #000;
+            border-radius: 4px;
+            border: 1px solid #333;
+            word-break: break-all;
+            font-size: 14px;
+        }
+        .publish-actions {
+            margin-top: 20px;
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+        .publish-label {
+            margin-top: 5px;
+            color: #aaa;
+            font-size: 13px;
+        }
+    </style>
+</head>
+<body>
+
+<nav class="navbar">
+    <div class="logo">Anonymous Feedback System - Admin</div>
+</nav>
+
+<section class="publish-container">
+    <div class="publish-box">
+        <h2>Publish Form</h2>
+        <p class="subtext" id="formInfo">Loading form information...</p>
+
+        <div id="errorBox" class="subtext" style="color:#ff6b6b; display:none;"></div>
+
+        <div id="linkSection" style="display:none;">
+            <p class="subtext">Click the button below to generate a public link for this form.</p>
+            <button class="primary-btn" id="generateBtn" type="button">Generate Link</button>
+
+            <div id="linkBox" class="publish-link-box" style="display:none;"></div>
+            <p id="helpText" class="publish-label" style="display:none;">
+                Share this link or convert it to a QR code for students/employees/citizens.
+            </p>
+        </div>
+
+        <div class="publish-actions">
+            <button class="secondary-btn" type="button" onclick="goBack()">Back</button>
+        </div>
+    </div>
+</section>
+
+<script>
+const urlParams = new URLSearchParams(window.location.search);
+const formId = urlParams.get("id");
+
+const apiBase = "https://web-production-315e.up.railway.app";
+
+const formInfo = document.getElementById("formInfo");
+const errorBox = document.getElementById("errorBox");
+const linkSection = document.getElementById("linkSection");
+const generateBtn = document.getElementById("generateBtn");
+const linkBox = document.getElementById("linkBox");
+const helpText = document.getElementById("helpText");
+
+async function loadFormInfo() {
+    if (!formId) {
+        formInfo.textContent = "Form id is missing in URL.";
+        return;
+    }
+    try {
+        const res = await fetch(`${apiBase}/load-form-template?id=${formId}`);
+        const data = await res.json();
+        if (!res.ok) {
+            formInfo.textContent = "Unable to load form information.";
+            errorBox.textContent = data.error || "Unknown error.";
+            errorBox.style.display = "block";
+            return;
+        }
+        const name = data.name || "Untitled Form";
+        const status = data.status || "draft";
+        formInfo.textContent = `Form: ${name} (Status: ${status})`;
+
+        linkSection.style.display = "block";
+    } catch (e) {
+        console.error(e);
+        formInfo.textContent = "Unable to connect to server.";
+    }
+}
+
+function generateLink() {
+    // Detect current host (where frontend is served from)
+    const frontendBase = window.location.origin;
+    const link = `${frontendBase}/public-form.html?id=${formId}`;
+
+    linkBox.textContent = link;
+    linkBox.style.display = "block";
+    helpText.style.display = "block";
+}
+
+function goBack() {
+    window.location.href = "drafts.html";
+}
+
+generateBtn.addEventListener("click", generateLink);
+
+loadFormInfo();
+</script>
+
+</body>
+</html>

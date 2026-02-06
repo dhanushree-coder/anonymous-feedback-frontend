@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Publish Form</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="admin-home.css">
+    <style>
+        .publish-container {
+            min-height: 100vh;
+            padding-top: 90px;
+            padding: 90px 40px 40px 40px;
+        }
+        .publish-box {
+            max-width: 600px;
+            margin: 0 auto;
+            background: rgba(0, 0, 0, 0.7);
+            border-radius: 12px;
+            box-shadow: 0 0 15px #00ff99;
+            padding: 20px 25px;
+        }
+        .publish-box h2 {
+            margin-bottom: 10px;
+        }
+        .publish-link-box {
+            margin-top: 15px;
+            padding: 10px;
+            background-color: #000;
+            border-radius: 4px;
+            border: 1px solid #333;
+            word-break: break-all;
+            font-size: 14px;
+            color: #e0fff3;
+        }
+        .publish-actions {
+            margin-top: 20px;
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+        .subtext-small {
+            color: #e0fff3;
+            font-size: 0.9rem;
+            margin-top: 8px;
+        }
+    </style>
+</head>
+<body>
+
+<nav class="navbar">
+    <div class="logo">Anonymous Feedback System - Publish Form</div>
+</nav>
+
+<section class="publish-container">
+    <div class="publish-box">
+        <h2>Publish Form</h2>
+        <p class="subtext" id="formInfo">Loading form information...</p>
+
+        <div id="errorBox" class="subtext" style="color:#ff6b6b; display:none;"></div>
+
+        <div id="linkSection" style="display:none; margin-top:15px;">
+            <p class="subtext">
+                Click the button below to create a public link for this form. You can share this link or convert it into a QR code.
+            </p>
+            <button class="primary-btn" id="generateBtn" type="button">Generate Link</button>
+
+            <div id="linkBox" class="publish-link-box" style="display:none;"></div>
+            <p id="helpText" class="subtext-small" style="display:none;">
+                This link opens the anonymous feedback page for this form.
+            </p>
+        </div>
+
+        <div class="publish-actions">
+            <button class="back-btn" type="button" onclick="goBack()">← Back</button>
+        </div>
+    </div>
+</section>
+
+<script>
+const urlParams = new URLSearchParams(window.location.search);
+const formId = urlParams.get("id");
+
+const apiBase = "https://web-production-315e.up.railway.app";
+
+const formInfo = document.getElementById("formInfo");
+const errorBox = document.getElementById("errorBox");
+const linkSection = document.getElementById("linkSection");
+const generateBtn = document.getElementById("generateBtn");
+const linkBox = document.getElementById("linkBox");
+const helpText = document.getElementById("helpText");
+
+async function loadFormInfo() {
+    if (!formId) {
+        formInfo.textContent = "Form id is missing in URL.";
+        return;
+    }
+    try {
+        const res = await fetch(`${apiBase}/load-form-template?id=${formId}`);
+        const data = await res.json();
+        if (!res.ok) {
+            formInfo.textContent = "Unable to load form information.";
+            errorBox.textContent = data.error || "Unknown error.";
+            errorBox.style.display = "block";
+            return;
+        }
+        const name = data.name || "Untitled Form";
+        const status = data.status || "draft";
+        formInfo.textContent = `Form: ${name} (Status: ${status})`;
+
+        linkSection.style.display = "block";
+    } catch (e) {
+        console.error(e);
+        formInfo.textContent = "Unable to connect to server.";
+    }
+}
+
+function generateLink() {
+    // IMPORTANT: this must be the real frontend base URL, not file://
+    const frontendBase = window.location.origin;
+    const link = `${frontendBase}/public-form.html?id=${formId}`;
+
+    linkBox.textContent = link;
+    linkBox.style.display = "block";
+    helpText.style.display = "block";
+}
+
+function goBack() {
+    window.location.href = "drafts.html";
+}
+
+generateBtn.addEventListener("click", generateLink);
+
+loadFormInfo();
+</script>
+
+</body>
+</html>

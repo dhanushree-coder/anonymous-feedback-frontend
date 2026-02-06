@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Government Service Templates</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="college-templates.css"><!-- reuse same template grid styling -->
+</head>
+<body>
+
+<nav class="navbar">
+    <div class="logo">Anonymous Feedback System - Government Services</div>
+</nav>
+
+<div class="college-page-container" id="governmentPage">
+    <section class="college-header">
+        <h2>Government Service Feedback Templates</h2>
+        <p class="subtext">
+            Select a government service area to customize feedback forms. You can combine multiple services into a single form if required.
+        </p>
+        <button class="back-btn" onclick="goBackToDashboard()">← Back to Dashboard</button>
+    </section>
+
+    <section class="college-services">
+        <div class="services-grid">
+
+            <div class="service-card" data-service="Public Service Efficiency">
+                <h3>Public Service Efficiency</h3>
+                <p>Effectiveness, speed, and reliability of public services.</p>
+            </div>
+
+            <div class="service-card" data-service="Staff Behavior & Courtesy">
+                <h3>Staff Behavior & Courtesy</h3>
+                <p>Politeness, professionalism, and responsiveness of staff.</p>
+            </div>
+
+            <div class="service-card" data-service="Transparency & Fairness">
+                <h3>Transparency & Fairness</h3>
+                <p>Clarity of processes, fairness, and absence of bias.</p>
+            </div>
+
+            <div class="service-card" data-service="Processing Time & Delays">
+                <h3>Processing Time & Delays</h3>
+                <p>Timeliness of service delivery and delay handling.</p>
+            </div>
+
+            <div class="service-card" data-service="Infrastructure & Cleanliness">
+                <h3>Infrastructure & Cleanliness</h3>
+                <p>Office facilities, hygiene, and maintenance.</p>
+            </div>
+
+            <div class="service-card" data-service="Digital Services & Online Portals">
+                <h3>Digital Services & Online Portals</h3>
+                <p>Online portals, digital access, and system usability.</p>
+            </div>
+
+            <div class="service-card" data-service="Complaint Handling Mechanism">
+                <h3>Complaint Handling Mechanism</h3>
+                <p>Effectiveness of grievance redressal systems.</p>
+            </div>
+
+            <div class="service-card" data-service="Accessibility for Elderly & Disabled">
+                <h3>Accessibility for Elderly & Disabled</h3>
+                <p>Ease of access and special assistance availability.</p>
+            </div>
+
+            <div class="service-card" data-service="Security & Crowd Management">
+                <h3>Security & Crowd Management</h3>
+                <p>Safety measures, queue systems, and crowd control.</p>
+            </div>
+
+            <div class="service-card" data-service="Information Availability & Guidance">
+                <h3>Information Availability & Guidance</h3>
+                <p>Availability of information desks, signage, and guidance.</p>
+            </div>
+
+        </div>
+    </section>
+</div>
+
+<div id="combineModal" class="modal-overlay">
+    <div class="modal-box">
+        <h3 id="modalTitle">Customize Template</h3>
+        <p class="subtext" id="modalServiceText"></p>
+
+        <div class="modal-options">
+            <label>
+                <input type="radio" name="combineOption" value="mass" checked>
+                Mass combine (all services in one form)
+            </label>
+            <label>
+                <input type="radio" name="combineOption" value="single">
+                No combine (only this service)
+            </label>
+            <label>
+                <input type="radio" name="combineOption" value="custom">
+                Combine 2 or more selected services
+            </label>
+        </div>
+
+        <div id="customServicesContainer" class="custom-services">
+            <p class="subtext">Select services to combine:</p>
+            <div id="customServicesList" class="custom-services-list">
+                <!-- checkboxes injected by JS -->
+            </div>
+        </div>
+
+        <div class="modal-actions">
+            <button type="button" class="primary-btn" onclick="confirmTemplateChoice()">Continue</button>
+            <button type="button" class="secondary-btn" onclick="closeModal()">Cancel</button>
+        </div>
+    </div>
+</div>
+
+<script>
+const governmentPage = document.getElementById('governmentPage');
+const serviceCards = document.querySelectorAll('.service-card');
+const modal = document.getElementById('combineModal');
+const modalTitle = document.getElementById('modalTitle');
+const modalServiceText = document.getElementById('modalServiceText');
+const customServicesContainer = document.getElementById('customServicesContainer');
+const customServicesList = document.getElementById('customServicesList');
+
+let allServices = [];
+let selectedMainService = null;
+
+serviceCards.forEach(card => {
+    allServices.push(card.getAttribute('data-service'));
+});
+
+serviceCards.forEach(card => {
+    card.addEventListener('click', () => {
+        selectedMainService = card.getAttribute('data-service');
+        openModal(selectedMainService);
+    });
+});
+
+function openModal(serviceName) {
+    modalTitle.textContent = "Customize Template for: " + serviceName;
+    modalServiceText.textContent =
+        "Choose how you want to combine \"" + serviceName + "\" with other government services.";
+    document.querySelectorAll('input[name="combineOption"]').forEach(r => {
+        r.checked = r.value === 'mass';
+    });
+    buildCustomServicesList(serviceName);
+    customServicesContainer.style.display = 'none';
+    governmentPage.classList.add('blur-background');
+    modal.style.display = 'flex';
+}
+
+function closeModal() {
+    modal.style.display = 'none';
+    governmentPage.classList.remove('blur-background');
+}
+
+document.querySelectorAll('input[name="combineOption"]').forEach(radio => {
+    radio.addEventListener('change', () => {
+        if (radio.value === 'custom' && radio.checked) {
+            customServicesContainer.style.display = 'block';
+        } else if (radio.checked) {
+            customServicesContainer.style.display = 'none';
+        }
+    });
+});
+
+function buildCustomServicesList(mainService) {
+    customServicesList.innerHTML = '';
+    allServices.forEach(service => {
+        if (service === mainService) return;
+        const label = document.createElement('label');
+        label.className = 'custom-service-item';
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.value = service;
+        label.appendChild(checkbox);
+        label.appendChild(document.createTextNode(" " + service));
+        customServicesList.appendChild(label);
+    });
+}
+
+function confirmTemplateChoice() {
+    const option = document.querySelector('input[name="combineOption"]:checked').value;
+
+    let combinedServices = [];
+    if (option === 'mass') {
+        combinedServices = [...allServices];
+    } else if (option === 'single') {
+        combinedServices = [selectedMainService];
+    } else if (option === 'custom') {
+        combinedServices = [selectedMainService];
+        const selectedCheckboxes = customServicesList.querySelectorAll('input[type="checkbox"]:checked');
+        selectedCheckboxes.forEach(cb => combinedServices.push(cb.value));
+    }
+
+    const payload = {
+        mainService: selectedMainService,
+        option,
+        services: combinedServices
+    };
+
+    localStorage.setItem("governmentFormConfig", JSON.stringify(payload));
+
+    closeModal();
+    window.location.href = "government-form-builder.html";
+}
+
+function goBackToDashboard() {
+    window.location.href = "admin-dashboard.html";
+}
+</script>
+
+</body>
+</html>

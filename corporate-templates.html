@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Corporate Templates</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="college-templates.css"><!-- reuse same template grid styling -->
+</head>
+<body>
+
+<nav class="navbar">
+    <div class="logo">Anonymous Feedback System - Corporates</div>
+</nav>
+
+<div class="college-page-container" id="corporatePage">
+    <section class="college-header">
+        <h2>Corporate Feedback Templates</h2>
+        <p class="subtext">
+            Select a corporate facility to customize feedback forms. You can combine multiple facilities into a single form if needed.
+        </p>
+        <button class="back-btn" onclick="goBackToDashboard()">← Back to Dashboard</button>
+    </section>
+
+    <section class="college-services">
+        <div class="services-grid">
+            <div class="service-card" data-service="Work Environment & Office Culture">
+                <h3>Work Environment & Office Culture</h3>
+                <p>Physical workspace, culture, and day-to-day environment.</p>
+            </div>
+            <div class="service-card" data-service="Management & Leadership">
+                <h3>Management & Leadership</h3>
+                <p>Leadership accessibility, decision-making, and inspiration.</p>
+            </div>
+            <div class="service-card" data-service="Team Collaboration & Communication">
+                <h3>Team Collaboration & Communication</h3>
+                <p>Teamwork quality, information flow, and collaboration.</p>
+            </div>
+            <div class="service-card" data-service="Job Role Clarity & Responsibilities">
+                <h3>Job Role Clarity & Responsibilities</h3>
+                <p>Role understanding, expectations, and workload clarity.</p>
+            </div>
+            <div class="service-card" data-service="Performance Evaluation & Appraisal">
+                <h3>Performance Evaluation & Appraisal</h3>
+                <p>Fairness and transparency of performance reviews.</p>
+            </div>
+            <div class="service-card" data-service="Training & Skill Development">
+                <h3>Training & Skill Development</h3>
+                <p>Learning opportunities, workshops, and upskilling.</p>
+            </div>
+            <div class="service-card" data-service="Career Growth & Promotion">
+                <h3>Career Growth & Promotion</h3>
+                <p>Growth paths, promotions, and internal mobility.</p>
+            </div>
+            <div class="service-card" data-service="Compensation & Benefits">
+                <h3>Compensation & Benefits</h3>
+                <p>Salary fairness, perks, and total rewards.</p>
+            </div>
+            <div class="service-card" data-service="Work-Life Balance">
+                <h3>Work-Life Balance</h3>
+                <p>Hours, workload, flexibility, and personal time.</p>
+            </div>
+            <div class="service-card" data-service="Employee Engagement & Motivation">
+                <h3>Employee Engagement & Motivation</h3>
+                <p>Connection to work, enthusiasm, and commitment.</p>
+            </div>
+            <div class="service-card" data-service="HR Policies & Support">
+                <h3>HR Policies & Support</h3>
+                <p>Policy clarity and HR responsiveness.</p>
+            </div>
+            <div class="service-card" data-service="Infrastructure & Office Facilities">
+                <h3>Infrastructure & Office Facilities</h3>
+                <p>Office space, meeting rooms, and utilities.</p>
+            </div>
+            <div class="service-card" data-service="IT Systems & Digital Tools">
+                <h3>IT Systems & Digital Tools</h3>
+                <p>Hardware, software, and tools supporting work.</p>
+            </div>
+            <div class="service-card" data-service="Workplace Safety & Compliance">
+                <h3>Workplace Safety & Compliance</h3>
+                <p>Safety practices, compliance, and regulations.</p>
+            </div>
+            <div class="service-card" data-service="Diversity, Equity & Inclusion">
+                <h3>Diversity, Equity & Inclusion</h3>
+                <p>Inclusiveness, equal opportunity, and fairness.</p>
+            </div>
+            <div class="service-card" data-service="Grievance Handling & Ethics">
+                <h3>Grievance Handling & Ethics</h3>
+                <p>Issue reporting, ethics, and trust in processes.</p>
+            </div>
+            <div class="service-card" data-service="Internal Communication & Transparency">
+                <h3>Internal Communication & Transparency</h3>
+                <p>Top-down and bottom-up communication channels.</p>
+            </div>
+            <div class="service-card" data-service="Innovation & Process Improvement">
+                <h3>Innovation & Process Improvement</h3>
+                <p>Idea sharing, change adoption, and improvements.</p>
+            </div>
+            <div class="service-card" data-service="Remote / Hybrid Work Support">
+                <h3>Remote / Hybrid Work Support</h3>
+                <p>Support, tools, and policies for non-onsite work.</p>
+            </div>
+            <div class="service-card" data-service="Overall Employee Experience">
+                <h3>Overall Employee Experience</h3>
+                <p>Overall satisfaction with working in the organization.</p>
+            </div>
+        </div>
+    </section>
+</div>
+
+<div id="combineModal" class="modal-overlay">
+    <div class="modal-box">
+        <h3 id="modalTitle">Customize Template</h3>
+        <p class="subtext" id="modalServiceText"></p>
+
+        <div class="modal-options">
+            <label>
+                <input type="radio" name="combineOption" value="mass" checked>
+                Mass combine (all facilities in one form)
+            </label>
+            <label>
+                <input type="radio" name="combineOption" value="single">
+                No combine (only this facility)
+            </label>
+            <label>
+                <input type="radio" name="combineOption" value="custom">
+                Combine 2 or more selected facilities
+            </label>
+        </div>
+
+        <div id="customServicesContainer" class="custom-services">
+            <p class="subtext">Select facilities to combine:</p>
+            <div id="customServicesList" class="custom-services-list">
+                <!-- checkboxes injected by JS -->
+            </div>
+        </div>
+
+        <div class="modal-actions">
+            <button type="button" class="primary-btn" onclick="confirmTemplateChoice()">Continue</button>
+            <button type="button" class="secondary-btn" onclick="closeModal()">Cancel</button>
+        </div>
+    </div>
+</div>
+
+<script>
+const corporatePage = document.getElementById('corporatePage');
+const serviceCards = document.querySelectorAll('.service-card');
+const modal = document.getElementById('combineModal');
+const modalTitle = document.getElementById('modalTitle');
+const modalServiceText = document.getElementById('modalServiceText');
+const customServicesContainer = document.getElementById('customServicesContainer');
+const customServicesList = document.getElementById('customServicesList');
+
+let allServices = [];
+let selectedMainService = null;
+
+serviceCards.forEach(card => {
+    allServices.push(card.getAttribute('data-service'));
+});
+
+serviceCards.forEach(card => {
+    card.addEventListener('click', () => {
+        selectedMainService = card.getAttribute('data-service');
+        openModal(selectedMainService);
+    });
+});
+
+function openModal(serviceName) {
+    modalTitle.textContent = "Customize Template for: " + serviceName;
+    modalServiceText.textContent = "Choose how you want to combine \"" + serviceName + "\" with other corporate facilities.";
+    document.querySelectorAll('input[name="combineOption"]').forEach(r => {
+        r.checked = r.value === 'mass';
+    });
+    buildCustomServicesList(serviceName);
+    customServicesContainer.style.display = 'none';
+    corporatePage.classList.add('blur-background');
+    modal.style.display = 'flex';
+}
+
+function closeModal() {
+    modal.style.display = 'none';
+    corporatePage.classList.remove('blur-background');
+}
+
+document.querySelectorAll('input[name="combineOption"]').forEach(radio => {
+    radio.addEventListener('change', () => {
+        if (radio.value === 'custom' && radio.checked) {
+            customServicesContainer.style.display = 'block';
+        } else if (radio.checked) {
+            customServicesContainer.style.display = 'none';
+        }
+    });
+});
+
+function buildCustomServicesList(mainService) {
+    customServicesList.innerHTML = '';
+    allServices.forEach(service => {
+        if (service === mainService) return;
+        const label = document.createElement('label');
+        label.className = 'custom-service-item';
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.value = service;
+        label.appendChild(checkbox);
+        label.appendChild(document.createTextNode(" " + service));
+        customServicesList.appendChild(label);
+    });
+}
+
+function confirmTemplateChoice() {
+    const option = document.querySelector('input[name="combineOption"]:checked').value;
+
+    let combinedServices = [];
+    if (option === 'mass') {
+        combinedServices = [...allServices];
+    } else if (option === 'single') {
+        combinedServices = [selectedMainService];
+    } else if (option === 'custom') {
+        combinedServices = [selectedMainService];
+        const selectedCheckboxes = customServicesList.querySelectorAll('input[type="checkbox"]:checked');
+        selectedCheckboxes.forEach(cb => combinedServices.push(cb.value));
+    }
+
+    const payload = {
+        mainService: selectedMainService,
+        option,
+        services: combinedServices
+    };
+    localStorage.setItem("corporateFormConfig", JSON.stringify(payload));
+
+    closeModal();
+    window.location.href = "corporate-form-builder.html";
+}
+
+function goBackToDashboard() {
+    window.location.href = "admin-dashboard.html";
+}
+</script>
+
+</body>
+</html>

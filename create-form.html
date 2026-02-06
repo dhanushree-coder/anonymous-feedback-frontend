@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Create New Feedback Form</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="form-builder-corgo.css">
+    <link rel="stylesheet" href="create-form.css">
+</head>
+<body>
+
+<nav class="navbar">
+    <div class="logo">Anonymous Feedback System - Create New Feedback Form</div>
+</nav>
+
+<div class="form-builder-container">
+    <header class="form-builder-header">
+        <h2>Create New Feedback Form</h2>
+        <p class="subtext">
+            Build a new feedback form from scratch. Add, edit, delete, reorder questions and choose answer types as needed.
+        </p>
+
+        <div class="form-name-row">
+            <label for="formName">Form name:</label>
+            <input type="text" id="formName" placeholder="Untitled Feedback Form">
+        </div>
+
+        <div class="form-domain-row">
+            <label for="formDomain">Domain:</label>
+            <select id="formDomain">
+                <option value="">Select Domain</option>
+                <option value="school">School</option>
+                <option value="college">College</option>
+                <option value="corporate">Corporate</option>
+                <option value="government">Government</option>
+            </select>
+        </div>
+
+        <button class="back-btn" onclick="goBackToForms()">← Back to Form Management</button>
+    </header>
+
+    <main id="servicesContainer">
+        <!-- Sections and questions injected by JS -->
+    </main>
+
+    <section class="overall-rating-section">
+        <h3>Overall Rating</h3>
+        <p class="subtext">Please set the overall rating question (required, 1–5 stars).</p>
+
+        <div class="stars-container" id="starsContainer">
+            <span data-value="1">★</span>
+            <span data-value="2">★</span>
+            <span data-value="3">★</span>
+            <span data-value="4">★</span>
+            <span data-value="5">★</span>
+        </div>
+        <p id="ratingLabel" class="subtext">Rating: not set</p>
+
+        <div id="reasonContainer" class="reason-container" style="display:none;">
+            <label for="ratingReason">Reason for low rating (required for 1–2 stars):</label>
+            <textarea id="ratingReason" placeholder="Please enter the reason..."></textarea>
+        </div>
+    </section>
+
+    <section class="form-builder-actions">
+        <button class="secondary-btn" onclick="saveDraft()">Save Draft</button>
+        <button class="primary-btn" onclick="publishForm()">Publish Form</button>
+    </section>
+</div>
+
+<script>
+// ---------------- BASIC STATE ----------------
+const servicesContainer = document.getElementById('servicesContainer');
+const formNameInput = document.getElementById('formName');
+const formDomainSelect = document.getElementById('formDomain');
+
+let formState = {
+    id: null,
+    domain: "",
+    name: "Untitled Feedback Form",
+    services: [
+        {
+            name: "New Section",
+            questions: []
+        }
+    ],
+    overallRating: 0,
+    ratingReason: "",
+    status: "draft"
+};
+
+let draggedServiceIndex = null;
+let draggedQuestionIndex = null;
+
+// ---------------- INIT BUILDER ----------------
+function initBuilder() {
+    formNameInput.value = formState.name;
+    formNameInput.addEventListener('input', () => {
+        formState.name = formNameInput.value || "Untitled Feedback Form";
+    });
+
+    formDomainSelect.addEventListener('change', () => {
+        formState.domain = formDomainSelect.value;
+    });
+
+    renderServices();
+    setupRating();
+}
+
+// ---------------- CREATE NEW SECTION ----------------
+function createNewSection() {
+    formState.services.push({
+        name: "New Section",
+        questions: []
+    });
+    renderServices();
+}
+
+// ---------------- RENDER SERVICES & QUESTIONS ----------------
+function renderServices() {
+    servicesContainer.innerHTML = "";
+
+    formState.services.forEach((service, sIdx) => {
+        const section = document.createElement('section');
+        section.className = 'service-section';
+
+        const header = document.createElement('div');
+        header.className = 'service-header-row';
+
+        const titleInput = document.createElement('input');
+        titleInput.type = "text";
+        titleInput.value = service.name;
+        titleInput.className = "section-title-input";
+        titleInput.oninput = (e) => {
+            formState.services[sIdx].name = e.target.value || "New Section";
+        };
+
+        const headerButtons = document.createElement('div');
+        headerButtons.className = "service-header-actions";
+
+        const addBtn = document.createElement('button');
+        addBtn.textContent = "Add Question";
+        addBtn.type = "button";
+        addBtn.onclick = () => addQuestion(sIdx);
+
+        const newSectionBtn = document.createElement('button');
+        newSectionBtn.textContent = "Add New Section";
+        newSectionBtn.type = "button";
+        newSectionBtn.className = "add-section-btn";
+        newSectionBtn.onclick = () => createNewSection();
+
+        headerButtons.appendChild(addBtn);
+        headerButtons.appendChild(newSectionBtn);
+
+        header.appendChild(titleInput);
+        header.appendChild(headerButtons);
+        section.appendChild(header);
+
+        const questionsContainer = document.createElement('div');
+        questionsContainer.className = 'questions-container';
+
+        service.questions.forEach((q, qIdx) => {
+            const qBox = document.createElement('div');
+            qBox.className = 'question-box';
+            qBox.draggable = true;
+            qBox.dataset.serviceIndex = sIdx;
+            qBox.dataset.questionIndex = qIdx;
+
+            qBox.addEventListener('dragstart', onDragStart);
+            qBox.addEventListener('dragover', onDragOver);
+            qBox.addEventListener('drop', onDrop);
+
+            const qRow = document.createElement('div');
+            qRow.className = 'question-row';
+
+            const dragHandle = document.createElement('span');
+            dragHandle.className = 'drag-handle';
+            dragHandle.textContent = "≡";
+
+            const qInput = document.createElement('input');
+            qInput.type = 'text';
+            qInput.value = q.text;
+            qInput.placeholder = "Question text";
+            qInput.oninput = (e) => {
+                formState.services[sIdx].questions[qIdx].text = e.target.value;
+            };
+
+            const typeSelect = document.createElement('select');
+            typeSelect.className = 'type-select';
+
+            const types = [
+                { value: "short", label: "Short Answer" },
+                { value: "long", label: "Long Answer" },
+                { value: "multiple", label: "Multiple Choice" },
+                { value: "checkbox", label: "Checkboxes" },
+                { value: "dropdown", label: "Dropdown" },
+                { value: "rating", label: "Rating (1–5)" },
+                { value: "yesno", label: "Yes / No" }
+            ];
+
+            types.forEach(t => {
+                const opt = document.createElement('option');
+                opt.value = t.value;
+                opt.textContent = t.label;
+                if (q.type === t.value) opt.selected = true;
+                typeSelect.appendChild(opt);
+            });
+
+            typeSelect.onchange = (e) => {
+                const newType = e.target.value;
+                const qRef = formState.services[sIdx].questions[qIdx];
+                qRef.type = newType;
+
+                if (["short", "long", "rating"].includes(newType)) {
+                    qRef.options = [];
+                } else if (newType === "yesno") {
+                    qRef.options = ["Yes", "No"];
+                } else if (["multiple", "checkbox", "dropdown"].includes(newType) && (!qRef.options || qRef.options.length === 0)) {
+                    qRef.options = ["Option 1", "Option 2"];
+                }
+                renderServices();
+            };
+
+            const requiredLabel = document.createElement('label');
+            requiredLabel.className = 'required-toggle';
+            const reqCheckbox = document.createElement('input');
+            reqCheckbox.type = "checkbox";
+            reqCheckbox.checked = !!q.required;
+            reqCheckbox.onchange = (e) => {
+                formState.services[sIdx].questions[qIdx].required = e.target.checked;
+            };
+            requiredLabel.appendChild(reqCheckbox);
+            requiredLabel.appendChild(document.createTextNode(" Required"));
+
+            const dupBtn = document.createElement('button');
+            dupBtn.type = "button";
+            dupBtn.textContent = "Duplicate";
+            dupBtn.onclick = () => duplicateQuestion(sIdx, qIdx);
+
+            const deleteBtn = document.createElement('button');
+            deleteBtn.className = 'delete-question-btn';
+            deleteBtn.type = "button";
+            deleteBtn.textContent = "Delete";
+            deleteBtn.onclick = () => deleteQuestion(sIdx, qIdx);
+
+            qRow.appendChild(dragHandle);
+            qRow.appendChild(qInput);
+            qRow.appendChild(typeSelect);
+            qRow.appendChild(requiredLabel);
+            qRow.appendChild(dupBtn);
+            qRow.appendChild(deleteBtn);
+
+            qBox.appendChild(qRow);
+
+            const desc = document.createElement('textarea');
+            desc.className = "question-description";
+            desc.placeholder = "Description (optional)";
+            desc.value = q.description || "";
+            desc.oninput = (e) => {
+                formState.services[sIdx].questions[qIdx].description = e.target.value;
+            };
+            qBox.appendChild(desc);
+
+            if (["multiple", "checkbox", "dropdown", "yesno"].includes(q.type)) {
+                const optionsBox = document.createElement('div');
+                optionsBox.className = "options-box";
+
+                const optionsLabel = document.createElement('p');
+                optionsLabel.className = "subtext";
+                optionsLabel.textContent = "Options:";
+                optionsBox.appendChild(optionsLabel);
+
+                (q.options || []).forEach((optText, oIdx) => {
+                    const optRow = document.createElement('div');
+                    optRow.className = "option-row";
+
+                    const optInput = document.createElement('input');
+                    optInput.type = 'text';
+                    optInput.value = optText;
+                    optInput.oninput = (e) => {
+                        formState.services[sIdx].questions[qIdx].options[oIdx] = e.target.value;
+                    };
+
+                    const removeOptBtn = document.createElement('button');
+                    removeOptBtn.type = "button";
+                    removeOptBtn.textContent = "x";
+                    removeOptBtn.className = "remove-option-btn";
+                    removeOptBtn.onclick = () => {
+                        formState.services[sIdx].questions[qIdx].options.splice(oIdx, 1);
+                        renderServices();
+                    };
+
+                    optRow.appendChild(optInput);
+                    optRow.appendChild(removeOptBtn);
+                    optionsBox.appendChild(optRow);
+                });
+
+                const addOptBtn = document.createElement('button');
+                addOptBtn.type = "button";
+                addOptBtn.className = "add-option-btn";
+                addOptBtn.textContent = "Add Option";
+                addOptBtn.onclick = () => {
+                    const qRef = formState.services[sIdx].questions[qIdx];
+                    if (!qRef.options) qRef.options = [];
+                    qRef.options.push("New option");
+                    renderServices();
+                };
+
+                optionsBox.appendChild(addOptBtn);
+                qBox.appendChild(optionsBox);
+            }
+
+            if (q.type === "rating") {
+                const ratingHint = document.createElement('p');
+                ratingHint.className = "subtext";
+                ratingHint.textContent = "This question uses a fixed 1–5 rating scale.";
+                qBox.appendChild(ratingHint);
+            }
+
+            questionsContainer.appendChild(qBox);
+        });
+
+        section.appendChild(questionsContainer);
+        servicesContainer.appendChild(section);
+    });
+}
+
+// ---------------- DRAG & DROP ----------------
+function onDragStart(e) {
+    draggedServiceIndex = parseInt(e.currentTarget.dataset.serviceIndex, 10);
+    draggedQuestionIndex = parseInt(e.currentTarget.dataset.questionIndex, 10);
+}
+
+function onDragOver(e) {
+    e.preventDefault();
+}
+
+function onDrop(e) {
+    e.preventDefault();
+    const target = e.currentTarget;
+    const targetServiceIndex = parseInt(target.dataset.serviceIndex, 10);
+    const targetQuestionIndex = parseInt(target.dataset.questionIndex, 10);
+
+    if (draggedServiceIndex === null || draggedQuestionIndex === null) return;
+
+    const sourceQuestions = formState.services[draggedServiceIndex].questions;
+    const [moved] = sourceQuestions.splice(draggedQuestionIndex, 1);
+
+    const targetQuestions = formState.services[targetServiceIndex].questions;
+    targetQuestions.splice(targetQuestionIndex, 0, moved);
+
+    draggedServiceIndex = null;
+    draggedQuestionIndex = null;
+
+    renderServices();
+}
+
+// ---------------- QUESTION HELPERS ----------------
+function addQuestion(serviceIndex) {
+    formState.services[serviceIndex].questions.push({
+        text: "",
+        type: "short",
+        description: "",
+        required: false,
+        options: []
+    });
+    renderServices();
+}
+
+function deleteQuestion(serviceIndex, questionIndex) {
+    formState.services[serviceIndex].questions.splice(questionIndex, 1);
+    renderServices();
+}
+
+function duplicateQuestion(serviceIndex, questionIndex) {
+    const q = formState.services[serviceIndex].questions[questionIndex];
+    const copy = JSON.parse(JSON.stringify(q));
+    copy.text = (q.text || "") + " (copy)";
+    formState.services[serviceIndex].questions.splice(questionIndex + 1, 0, copy);
+    renderServices();
+}
+
+// ---------------- OVERALL RATING LOGIC ----------------
+function setupRating() {
+    const starsContainer = document.getElementById('starsContainer');
+    const label = document.getElementById('ratingLabel');
+    const reason = document.getElementById('ratingReason');
+
+    starsContainer.querySelectorAll('span').forEach(star => {
+        star.addEventListener('click', () => {
+            const value = parseInt(star.dataset.value, 10);
+            setOverallRating(value);
+        });
+    });
+
+    reason.addEventListener('input', () => {
+        formState.ratingReason = reason.value;
+    });
+}
+
+function setOverallRating(value) {
+    const starsContainer = document.getElementById('starsContainer');
+    const label = document.getElementById('ratingLabel');
+    formState.overallRating = value;
+
+    starsContainer.querySelectorAll('span').forEach(star => {
+        const v = parseInt(star.dataset.value, 10);
+        star.classList.toggle('active', v <= value);
+    });
+
+    if (value === 0) {
+        label.textContent = "Rating: not set";
+        document.getElementById('reasonContainer').style.display = "none";
+    } else {
+        label.textContent = "Rating: " + value + " star" + (value > 1 ? "s" : "");
+        if (value <= 2) {
+            document.getElementById('reasonContainer').style.display = "block";
+        } else {
+            document.getElementById('reasonContainer').style.display = "none";
+        }
+    }
+}
+
+// ---------------- VALIDATION ----------------
+function validateForm(isPublishing) {
+    if (!formState.name || !formState.name.trim()) {
+        alert("Please enter a form name.");
+        return false;
+    }
+    if (!formState.domain) {
+        alert("Please select a domain.");
+        return false;
+    }
+    if (!formState.overallRating || formState.overallRating < 1) {
+        alert("Please set the overall rating (1–5).");
+        return false;
+    }
+    if (formState.overallRating <= 2 && (!formState.ratingReason || !formState.ratingReason.trim())) {
+        alert("Please provide a reason for low overall rating (1–2 stars).");
+        return false;
+    }
+    const totalQuestions = formState.services.reduce((sum, s) => sum + s.questions.length, 0);
+    if (totalQuestions === 0) {
+        alert("Please add at least one question.");
+        return false;
+    }
+
+    const texts = formState.services[0].questions
+        .map(q => (q.text || "").trim().toLowerCase())
+        .filter(t => t);
+    const seen = new Set();
+    for (const t of texts) {
+        if (seen.has(t)) {
+            alert("Duplicate question detected. Please keep question texts unique within the section.");
+            return false;
+        }
+        seen.add(t);
+    }
+
+    if (isPublishing) {
+        if (formState.services[0].questions.length === 0) {
+            alert("Section must have at least one question before publishing.");
+            return false;
+        }
+    }
+
+    return true;
+}
+
+// ---------------- SAVE & PUBLISH TO BACKEND ----------------
+async function saveDraft() {
+    if (!validateForm(false)) return;
+
+    try {
+        formState.status = "draft";
+        const payload = {
+            ...formState,
+            domain: formState.domain || "custom"  // keep domain filter working in drafts.html
+        };
+
+        const res = await fetch("https://web-production-315e.up.railway.app/save-form-template", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+        });
+
+        if (!res.ok) {
+            alert("Could not save draft.");
+            return;
+        }
+
+        const data = await res.json();
+        formState.id = data.id;
+        alert("Form saved as draft.");
+    } catch (e) {
+        console.error("Error saving draft:", e);
+        alert("Could not save draft.");
+    }
+}
+
+async function publishForm() {
+    if (!validateForm(true)) return;
+
+    try {
+        formState.status = "published";
+        const payload = {
+            ...formState,
+            domain: formState.domain || "custom"
+        };
+
+        const res = await fetch("https://web-production-315e.up.railway.app/save-form-template", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+        });
+
+        if (!res.ok) {
+            alert("Could not publish form.");
+            return;
+        }
+
+        const data = await res.json();
+        formState.id = data.id;
+        alert("Form published successfully.");
+    } catch (e) {
+        console.error("Error publishing form:", e);
+        alert("Could not publish form.");
+    }
+}
+
+// ---------------- NAVIGATION ----------------
+function goBackToForms() {
+    window.location.href = "admin-dashboard.html#forms";
+}
+
+// ---------------- START ----------------
+document.addEventListener('DOMContentLoaded', initBuilder);
+</script>
+
+</body>
+</html>

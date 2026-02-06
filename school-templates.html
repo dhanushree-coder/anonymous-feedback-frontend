@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>School Templates</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="school-templates.css">
+</head>
+<body>
+
+<nav class="navbar">
+    <div class="logo">Anonymous Feedback System - Schools</div>
+</nav>
+
+<div class="school-page-container" id="schoolPage">
+    <section class="school-header">
+        <h2>School Feedback Templates</h2>
+        <p class="subtext">
+            Select a service to customize feedback forms. You can combine multiple services into a single form if needed.
+        </p>
+        <button class="back-btn" onclick="goBackToDashboard()">← Back to Dashboard</button>
+    </section>
+
+    <section class="school-services">
+        <div class="services-grid">
+            <div class="service-card" data-service="Teaching Quality">
+                <h3>Teaching Quality</h3>
+                <p>Feedback on subject knowledge, explanation clarity, and teaching methods.</p>
+            </div>
+            <div class="service-card" data-service="Classroom Environment">
+                <h3>Classroom Environment</h3>
+                <p>Seating, cleanliness, noise levels, and learning atmosphere.</p>
+            </div>
+            <div class="service-card" data-service="Extra Curricular Activities">
+                <h3>Extra Curricular Activities</h3>
+                <p>Sports, arts, clubs, and competitions participation.</p>
+            </div>
+            <div class="service-card" data-service="Discipline & Safety">
+                <h3>Discipline & Safety</h3>
+                <p>School rules, safety measures, and handling of issues.</p>
+            </div>
+            <div class="service-card" data-service="Infrastructure & Facilities">
+                <h3>Infrastructure & Facilities</h3>
+                <p>Classrooms, labs, library, playground, and restrooms.</p>
+            </div>
+            <div class="service-card" data-service="Communication with Parents">
+                <h3>Communication with Parents</h3>
+                <p>Reports, meetings, circulars, and responsiveness.</p>
+            </div>
+            <div class="service-card" data-service="Administrative Support">
+                <h3>Administrative Support</h3>
+                <p>Office support, fee processes, and general assistance.</p>
+            </div>
+            <div class="service-card" data-service="Transport Services">
+                <h3>Transport Services</h3>
+                <p>Bus/van safety, punctuality, and comfort.</p>
+            </div>
+        </div>
+    </section>
+</div>
+
+<!-- Modal for combine options -->
+<div id="combineModal" class="modal-overlay">
+    <div class="modal-box">
+        <h3 id="modalTitle">Customize Template</h3>
+        <p class="subtext" id="modalServiceText"></p>
+
+        <div class="modal-options">
+            <label>
+                <input type="radio" name="combineOption" value="mass" checked>
+                Mass combine (all services in one form)
+            </label>
+            <label>
+                <input type="radio" name="combineOption" value="single">
+                No combine (only this service)
+            </label>
+            <label>
+                <input type="radio" name="combineOption" value="custom">
+                Combine 2 or more selected services
+            </label>
+        </div>
+
+        <div id="customServicesContainer" class="custom-services">
+            <p class="subtext">Select services to combine:</p>
+            <div id="customServicesList" class="custom-services-list">
+                <!-- checkboxes injected by JS -->
+            </div>
+        </div>
+
+        <div class="modal-actions">
+            <button type="button" class="primary-btn" onclick="confirmTemplateChoice()">Continue</button>
+            <button type="button" class="secondary-btn" onclick="closeModal()">Cancel</button>
+        </div>
+    </div>
+</div>
+
+<script>
+const schoolPage = document.getElementById('schoolPage');
+const serviceCards = document.querySelectorAll('.service-card');
+const modal = document.getElementById('combineModal');
+const modalTitle = document.getElementById('modalTitle');
+const modalServiceText = document.getElementById('modalServiceText');
+const customServicesContainer = document.getElementById('customServicesContainer');
+const customServicesList = document.getElementById('customServicesList');
+
+let allServices = [];
+let selectedMainService = null;
+
+serviceCards.forEach(card => {
+    allServices.push(card.getAttribute('data-service'));
+});
+
+serviceCards.forEach(card => {
+    card.addEventListener('click', () => {
+        selectedMainService = card.getAttribute('data-service');
+        openModal(selectedMainService);
+    });
+});
+
+function openModal(serviceName) {
+    modalTitle.textContent = "Customize Template for: " + serviceName;
+    modalServiceText.textContent = "Choose how you want to combine \"" + serviceName + "\" with other school services.";
+    document.querySelectorAll('input[name="combineOption"]').forEach(r => {
+        r.checked = r.value === 'mass';
+    });
+    buildCustomServicesList(serviceName);
+    customServicesContainer.style.display = 'none';
+    schoolPage.classList.add('blur-background');
+    modal.style.display = 'flex';
+}
+
+function closeModal() {
+    modal.style.display = 'none';
+    schoolPage.classList.remove('blur-background');
+}
+
+document.querySelectorAll('input[name="combineOption"]').forEach(radio => {
+    radio.addEventListener('change', () => {
+        if (radio.value === 'custom' && radio.checked) {
+            customServicesContainer.style.display = 'block';
+        } else if (radio.checked) {
+            customServicesContainer.style.display = 'none';
+        }
+    });
+});
+
+function buildCustomServicesList(mainService) {
+    customServicesList.innerHTML = '';
+    allServices.forEach(service => {
+        if (service === mainService) return;
+        const label = document.createElement('label');
+        label.className = 'custom-service-item';
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.value = service;
+        label.appendChild(checkbox);
+        label.appendChild(document.createTextNode(" " + service));
+        customServicesList.appendChild(label);
+    });
+}
+
+function confirmTemplateChoice() {
+    const option = document.querySelector('input[name="combineOption"]:checked').value;
+
+    let combinedServices = [];
+    if (option === 'mass') {
+        combinedServices = [...allServices];
+    } else if (option === 'single') {
+        combinedServices = [selectedMainService];
+    } else if (option === 'custom') {
+        combinedServices = [selectedMainService];
+        const selectedCheckboxes = customServicesList.querySelectorAll('input[type="checkbox"]:checked');
+        selectedCheckboxes.forEach(cb => combinedServices.push(cb.value));
+    }
+
+    // Save choices to localStorage and go to form builder
+    const payload = {
+        mainService: selectedMainService,
+        option,
+        services: combinedServices
+    };
+    localStorage.setItem("schoolFormConfig", JSON.stringify(payload));
+
+    closeModal();
+    window.location.href = "form-builder.html";
+}
+
+function goBackToDashboard() {
+    window.location.href = "admin-dashboard.html";
+}
+</script>
+
+</body>
+</html>

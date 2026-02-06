@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Form Builder</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="form-builder.css">
+</head>
+<body>
+
+<nav class="navbar">
+    <div class="logo">Anonymous Feedback System - Form Builder</div>
+</nav>
+
+<div class="form-builder-container">
+    <header class="form-builder-header">
+        <h2>Customize Feedback Form</h2>
+        <p class="subtext">
+            Edit questions for each selected service. You can add, update, delete, reorder questions and modify answer types and options.
+        </p>
+        <div class="form-name-row">
+            <label for="formName">Form name:</label>
+            <input type="text" id="formName" placeholder="Untitled Form">
+        </div>
+        <button class="back-btn" onclick="goBackToTemplates()">← Back to Templates</button>
+    </header>
+
+    <main id="servicesContainer">
+        <!-- Sections injected by JS -->
+    </main>
+
+    <section class="overall-rating-section">
+        <h3>Overall Rating</h3>
+        <p class="subtext">Please set the overall rating question (required, 1–5 stars).</p>
+
+        <div class="stars-container" id="starsContainer">
+            <span data-value="1">★</span>
+            <span data-value="2">★</span>
+            <span data-value="3">★</span>
+            <span data-value="4">★</span>
+            <span data-value="5">★</span>
+        </div>
+        <p id="ratingLabel" class="subtext">Rating: not set</p>
+
+        <div id="reasonContainer" class="reason-container">
+            <label for="ratingReason">Reason for low rating (optional but recommended for 1–2 stars):</label>
+            <textarea id="ratingReason" placeholder="Please enter the reason..."></textarea>
+        </div>
+    </section>
+
+    <section class="form-builder-actions">
+        <button class="secondary-btn" onclick="saveDraft()">Save Draft</button>
+        <button class="primary-btn" onclick="submitForm()">Submit Form</button>
+    </section>
+</div>
+
+<script>
+let urlParams = new URLSearchParams(window.location.search);
+let templateIdFromUrl = urlParams.get("id"); // if coming from drafts list
+
+let config = null;
+try {
+    const raw = localStorage.getItem("schoolFormConfig");
+    if (raw) {
+        config = JSON.parse(raw);
+    }
+} catch (e) {
+    console.error("Error reading config:", e);
+}
+
+const servicesContainer = document.getElementById('servicesContainer');
+const formNameInput = document.getElementById('formName');
+
+/**
+ * Facility-wise master question bank
+ * Each entry has: text, type ("multiple" / "short" / "rating"), options[] (for multiple)
+ * Questions are specific to each facility, minimum 25 per facility. [web:24][web:26][web:27]
+ */
+const facilityQuestionBank = {
+    "Teaching Quality": [
+        { text: "How clearly does the teacher explain new concepts?", type: "multiple", options: ["Very clearly", "Clearly", "Somewhat clearly", "Not clearly at all"] },
+        { text: "How well does the teacher connect lessons with real-life examples?", type: "multiple", options: ["Always", "Often", "Sometimes", "Rarely"] },
+        { text: "How organized are the teacher's lessons?", type: "multiple", options: ["Very organized", "Organized", "Somewhat disorganized", "Very disorganized"] },
+        { text: "How effectively does the teacher answer your questions?", type: "multiple", options: ["Very effectively", "Effectively", "Somewhat effectively", "Not effectively"] },
+        { text: "How engaging are the teacher's teaching methods?", type: "multiple", options: ["Very engaging", "Engaging", "Average", "Not engaging"] },
+        { text: "How well does the teacher check if you have understood the topic?", type: "multiple", options: ["Very well", "Well", "Somewhat", "Not at all"] },
+        { text: "How frequently does the teacher provide useful feedback on your work?", type: "multiple", options: ["Very frequently", "Frequently", "Sometimes", "Rarely"] },
+        { text: "How fair is the teacher in grading and evaluation?", type: "multiple", options: ["Very fair", "Fair", "Sometimes unfair", "Often unfair"] },
+        { text: "How comfortable do you feel asking doubts to this teacher?", type: "multiple", options: ["Very comfortable", "Comfortable", "Somewhat uncomfortable", "Very uncomfortable"] },
+        { text: "How well does the teacher manage time during class?", type: "multiple", options: ["Very well", "Well", "Average", "Poorly"] },
+        { text: "How effective are the teaching materials used (notes, slides, examples)?", type: "multiple", options: ["Very effective", "Effective", "Average", "Not effective"] },
+        { text: "How well does the teacher encourage student participation?", type: "multiple", options: ["Very well", "Well", "Sometimes", "Not at all"] },
+        { text: "How often does the teacher revise or recap important topics?", type: "multiple", options: ["Very often", "Often", "Sometimes", "Rarely"] },
+        { text: "How helpful are the teacher's homework or assignments for understanding topics?", type: "multiple", options: ["Very helpful", "Helpful", "Somewhat helpful", "Not helpful"] },
+        { text: "Rate the teacher's subject knowledge.", type: "rating", options: [] },
+        { text: "Rate the teacher's communication skills.", type: "rating", options: [] },
+        { text: "What do you like most about this teacher's classes?", type: "short", options: [] },
+        { text: "What is one thing the teacher could improve in their teaching?", type: "short", options: [] },
+        { text: "Do you feel the teacher motivates you to learn the subject?", type: "multiple", options: ["Strongly agree", "Agree", "Disagree", "Strongly disagree"] },
+        { text: "Does the teacher complete the syllabus on time?", type: "multiple", options: ["Always", "Mostly", "Sometimes", "Rarely"] },
+        { text: "How effective are the teacher's doubt-clearing sessions?", type: "multiple", options: ["Very effective", "Effective", "Average", "Not effective"] },
+        { text: "Does the teacher encourage you to think critically and ask questions?", type: "multiple", options: ["Always", "Often", "Sometimes", "Rarely"] },
+        { text: "How respectful is the teacher towards students?", type: "multiple", options: ["Very respectful", "Respectful", "Sometimes disrespectful", "Often disrespectful"] },
+        { text: "Overall, how satisfied are you with this teacher's teaching quality?", type: "multiple", options: ["Very satisfied", "Satisfied", "Neutral", "Dissatisfied"] },
+        { text: "Any additional suggestions for improving teaching quality?", type: "short", options: [] }
+    ],
+    "Classroom Environment": [
+        { text: "How comfortable is the seating arrangement in your classroom?", type: "multiple", options: ["Very comfortable", "Comfortable", "Average", "Uncomfortable"] },
+        { text: "How would you rate the cleanliness of your classroom?", type: "multiple", options: ["Very clean", "Clean", "Sometimes unclean", "Not clean"] },
+        { text: "How satisfied are you with the classroom lighting?", type: "multiple", options: ["Very satisfied", "Satisfied", "Neutral", "Dissatisfied"] },
+        { text: "How satisfied are you with the ventilation/airflow in your classroom?", type: "multiple", options: ["Very satisfied", "Satisfied", "Neutral", "Dissatisfied"] },
+        { text: "How often is the classroom cleaned or maintained?", type: "multiple", options: ["Multiple times a day", "Daily", "Few times a week", "Rarely"] },
+        { text: "How noisy is your classroom during teaching hours?", type: "multiple", options: ["Very noisy", "Noisy", "Sometimes noisy", "Quiet"] },
+        { text: "Do you feel safe and comfortable inside your classroom?", type: "multiple", options: ["Always", "Often", "Sometimes", "Rarely"] },
+        { text: "How adequate is the board visibility from your seat?", type: "multiple", options: ["Very clear", "Clear", "Sometimes unclear", "Not clear"] },
+        { text: "How satisfied are you with temperature/air conditioning in the classroom (if applicable)?", type: "multiple", options: ["Very satisfied", "Satisfied", "Neutral", "Dissatisfied"] },
+        { text: "Are classroom displays (charts, boards) helpful for learning?", type: "multiple", options: ["Very helpful", "Helpful", "Somewhat helpful", "Not helpful"] },
+        { text: "How well is classroom equipment (fans, lights, projectors) maintained?", type: "multiple", options: ["Very well", "Well", "Average", "Poorly"] },
+        { text: "How would you rate the overall classroom atmosphere for learning?", type: "rating", options: [] },
+        { text: "Do you face any regular disturbances in the classroom that affect learning?", type: "short", options: [] },
+        { text: "How comfortable is the classroom during exams?", type: "multiple", options: ["Very comfortable", "Comfortable", "Average", "Uncomfortable"] },
+        { text: "How satisfied are you with the space available in the classroom (not overcrowded)?", type: "multiple", options: ["Very satisfied", "Satisfied", "Neutral", "Dissatisfied"] },
+        { text: "Are emergency exits and routes easily accessible from your classroom?", type: "multiple", options: ["Yes", "Somewhat", "Not sure", "No"] },
+        { text: "How suitable is the classroom furniture for your height and posture?", type: "multiple", options: ["Very suitable", "Suitable", "Somewhat unsuitable", "Not suitable"] },
+        { text: "Do you feel the classroom is inclusive and comfortable for all students?", type: "multiple", options: ["Strongly agree", "Agree", "Disagree", "Strongly disagree"] },
+        { text: "How often do classroom environmental issues disturb your concentration?", type: "multiple", options: ["Never", "Rarely", "Sometimes", "Often"] },
+        { text: "What do you like most about your classroom environment?", type: "short", options: [] },
+        { text: "What is one thing that would most improve your classroom environment?", type: "short", options: [] },
+        { text: "How satisfied are you with the availability of storage space (bags, books) in the classroom?", type: "multiple", options: ["Very satisfied", "Satisfied", "Neutral", "Dissatisfied"] },
+        { text: "How often are windows/curtains used properly to control light and glare?", type: "multiple", options: ["Always", "Often", "Sometimes", "Rarely"] },
+        { text: "Overall, how satisfied are you with your classroom environment?", type: "multiple", options: ["Very satisfied", "Satisfied", "Neutral", "Dissatisfied"] },
+        { text: "Any additional comments about classroom environment?", type: "short", options: [] }
+    ],
+    "Extra Curricular Activities": [
+        { text: "How satisfied are you with the variety of extra-curricular activities offered?", type: "multiple", options: ["Very satisfied", "Satisfied", "Neutral", "Dissatisfied"] },
+        { text: "How easy is it to enroll or participate in extra-curricular activities?", type: "multiple", options: ["Very easy", "Easy", "Average", "Difficult"] },
+        { text: "How well are sports activities organized?", type: "multiple", options: ["Very well", "Well", "Average", "Poorly"] },
+        { text: "How well are arts and cultural activities (music, dance, drama) organized?", type: "multiple", options: ["Very well", "Well", "Average", "Poorly"] },
+        { text: "How satisfied are you with the guidance provided by coaches/instructors?", type: "multiple", options: ["Very satisfied", "Satisfied", "Neutral", "Dissatisfied"] },
+        { text: "How safe do you feel while participating in extra-curricular activities?", type: "multiple", options: ["Very safe", "Safe", "Sometimes unsafe", "Unsafe"] },
+        { text: "How adequate are the facilities and equipment for sports activities?", type: "multiple", options: ["Very adequate", "Adequate", "Average", "Inadequate"] },
+        { text: "How adequate are the facilities and equipment for arts and clubs?", type: "multiple", options: ["Very adequate", "Adequate", "Average", "Inadequate"] },
+        { text: "How fairly are opportunities given to all interested students?", type: "multiple", options: ["Very fairly", "Fairly", "Sometimes unfairly", "Often unfairly"] },
+        { text: "How well do extra-curricular timings suit your academic schedule?", type: "multiple", options: ["Very well", "Well", "Average", "Poorly"] },
+        { text: "How well does participation in extra-curricular activities support your overall development?", type: "rating", options: [] },
+        { text: "Do you feel encouraged by the school to participate in extra-curricular activities?", type: "multiple", options: ["Strongly agree", "Agree", "Disagree", "Strongly disagree"] },
+        { text: "How satisfied are you with recognition or rewards given for achievements?", type: "multiple", options: ["Very satisfied", "Satisfied", "Neutral", "Dissatisfied"] },
+        { text: "How clear is the communication about upcoming events and competitions?", type: "multiple", options: ["Very clear", "Clear", "Sometimes unclear", "Not clear"] },
+        { text: "What type of new extra-curricular activities would you like the school to introduce?", type: "short", options: [] },
+        { text: "How inclusive are extra-curricular activities for students of different skill levels?", type: "multiple", options: ["Very inclusive", "Inclusive", "Somewhat exclusive", "Exclusive"] },
+        { text: "How satisfied are you with the practice schedules and frequency?", type: "multiple", options: ["Very satisfied", "Satisfied", "Neutral", "Dissatisfied"] },
+        { text: "How well are inter-school events and competitions managed?", type: "multiple", options: ["Very well", "Well", "Average", "Poorly"] },
+        { text: "Do extra-curricular activities cause excessive academic pressure for you?", type: "multiple", options: ["Never", "Rarely", "Sometimes", "Often"] },
+        { text: "What do you like most about the school's extra-curricular activities?", type: "short", options: [] },
+        { text: "What is one improvement that would make extra-curricular activities better for you?", type: "short", options: [] },
+        { text: "How satisfied are you with the transportation arrangements for events (if applicable)?", type: "multiple", options: ["Very satisfied", "Satisfied", "Neutral", "Dissatisfied"] },
+        { text: "How well do extra-curricular activities help you build teamwork skills?", type: "rating", options: [] },
+        { text: "How well do extra-curricular activities help you build confidence?", type: "rating", options: [] },
+        { text: "Overall, how satisfied are you with extra-curricular activities in this school?", type: "multiple", options: ["Very satisfied", "Satisfied", "Neutral", "Dissatisfied"] }
+    ],
+    "Discipline & Safety": [
+        { text: "How clearly are school rules and discipline policies communicated to you?", type: "multiple", options: ["Very clearly", "Clearly", "Somewhat clearly", "Not clearly"] },
+        { text: "How fair are the disciplinary actions taken by the school?", type: "multiple", options: ["Very fair", "Fair", "Sometimes unfair", "Often unfair"] },
+        { text: "How safe do you feel inside the school campus?", type: "multiple", options: ["Very safe", "Safe", "Sometimes unsafe", "Unsafe"] },
+        { text: "How well does the school handle bullying or harassment cases?", type: "multiple", options: ["Very well", "Well", "Average", "Poorly"] },
+        { text: "How responsive are teachers and staff when you report a safety or discipline issue?", type: "multiple", options: ["Very responsive", "Responsive", "Sometimes unresponsive", "Not responsive"] },
+        { text: "How strictly are rules followed in classrooms?", type: "multiple", options: ["Very strictly", "Strictly", "Sometimes", "Rarely"] },
+        { text: "How strictly are rules followed in common areas (playground, corridors, canteen)?", type: "multiple", options: ["Very strictly", "Strictly", "Sometimes", "Rarely"] },
+        { text: "How well are emergency procedures (fire drill, evacuation) explained to you?", type: "multiple", options: ["Very well", "Well", "Somewhat", "Not explained"] },
+        { text: "How effective are CCTV and security personnel in ensuring safety?", type: "multiple", options: ["Very effective", "Effective", "Average", "Ineffective"] },
+        { text: "How safe do you feel when leaving and entering the school premises?", type: "multiple", options: ["Very safe", "Safe", "Sometimes unsafe", "Unsafe"] },
+        { text: "How often do you notice unsafe behavior not being addressed?", type: "multiple", options: ["Never", "Rarely", "Sometimes", "Often"] },
+        { text: "Rate the overall safety of your school environment.", type: "rating", options: [] },
+        { text: "Rate the overall discipline maintained in your school.", type: "rating", options: [] },
+        { text: "Do you feel comfortable reporting a safety or discipline concern?", type: "multiple", options: ["Always", "Often", "Sometimes", "Never"] },
+        { text: "How well are students treated with respect during disciplinary actions?", type: "multiple", options: ["Very well", "Well", "Average", "Poorly"] },
+        { text: "How well does the school prevent physical fights or violence?", type: "multiple", options: ["Very well", "Well", "Average", "Poorly"] },
+        { text: "How safe do you feel in washrooms and less monitored areas?", type: "multiple", options: ["Very safe", "Safe", "Sometimes unsafe", "Unsafe"] },
+        { text: "Have you ever felt that discipline rules are applied differently to different students?", type: "multiple", options: ["Never", "Rarely", "Sometimes", "Often"] },
+        { text: "What safety or discipline issue bothers you the most, if any?", type: "short", options: [] },
+        { text: "What changes would you suggest to improve safety and discipline?", type: "short", options: [] },
+        { text: "How effectively are mobile phone or gadget policies implemented?", type: "multiple", options: ["Very effectively", "Effectively", "Average", "Not effective"] },
+        { text: "How strictly are late-coming and absenteeism rules followed?", type: "multiple", options: ["Very strictly", "Strictly", "Sometimes", "Rarely"] },
+        { text: "How clearly does the school explain consequences for rule violations?", type: "multiple", options: ["Very clearly", "Clearly", "Somewhat clearly", "Not clearly"] },
+        { text: "Overall, how satisfied are you with discipline and safety in this school?", type: "multiple", options: ["Very satisfied", "Satisfied", "Neutral", "Dissatisfied"] }
+    ],
+    "Infrastructure & Facilities": [
+        { text: "How satisfied are you with the condition of classrooms (walls, floors, windows)?", type: "multiple", options: ["Very satisfied", "Satisfied", "Neutral", "Dissatisfied"] },
+        { text: "How satisfied are you with the quality of classroom furniture?", type: "multiple", options: ["Very satisfied", "Satisfied", "Neutral", "Dissatisfied"] },
+        { text: "How would you rate the availability and condition of science laboratories?", type: "multiple", options: ["Excellent", "Good", "Average", "Poor"] },
+        { text: "How satisfied are you with the equipment available in laboratories?", type: "multiple", options: ["Very satisfied", "Satisfied", "Neutral", "Dissatisfied"] },
+        { text: "How would you rate the library infrastructure (space, seating, lighting)?", type: "multiple", options: ["Excellent", "Good", "Average", "Poor"] },
+        { text: "How adequate is the collection of books and learning materials in the library?", type: "multiple", options: ["Very adequate", "Adequate", "Average", "Inadequate"] },
+        { text: "How satisfied are you with computer lab facilities?", type: "multiple", options: ["Very satisfied", "Satisfied", "Neutral", "Dissatisfied"] },
+        { text: "How reliable are the internet and systems in computer labs (if applicable)?", type: "multiple", options: ["Very reliable", "Reliable", "Sometimes unreliable", "Unreliable"] },
+        { text: "How satisfied are you with the condition of playgrounds and sports areas?", type: "multiple", options: ["Very satisfied", "Satisfied", "Neutral", "Dissatisfied"] },
+        { text: "How satisfied are you with restrooms' cleanliness and maintenance?", type: "multiple", options: ["Very satisfied", "Satisfied", "Neutral", "Dissatisfied"] },
+        { text: "How adequate are drinking water facilities in the school?", type: "multiple", options: ["Very adequate", "Adequate", "Average", "Inadequate"] },
+        { text: "How would you rate the canteen facilities (if available)?", type: "multiple", options: ["Excellent", "Good", "Average", "Poor"] },
+        { text: "How satisfied are you with the availability of classrooms for all sections?", type: "multiple", options: ["Very satisfied", "Satisfied", "Neutral", "Dissatisfied"] },
+        { text: "How well maintained are common areas like corridors, assembly area, and stairs?", type: "multiple", options: ["Very well", "Well", "Average", "Poorly"] },
+        { text: "Rate the overall quality of school infrastructure.", type: "rating", options: [] },
+        { text: "How quickly are infrastructure issues (broken furniture, repairs) resolved after reporting?", type: "multiple", options: ["Very quickly", "Quickly", "Slowly", "Not resolved"] },
+        { text: "Do you feel the school infrastructure supports modern teaching methods (smart boards, projectors, etc.)?", type: "multiple", options: ["Strongly agree", "Agree", "Disagree", "Strongly disagree"] },
+        { text: "How accessible are facilities for students with disabilities (ramps, handrails, etc.)?", type: "multiple", options: ["Very accessible", "Accessible", "Partially accessible", "Not accessible"] },
+        { text: "What is the biggest issue you face with school infrastructure?", type: "short", options: [] },
+        { text: "What improvements in infrastructure would you suggest as a priority?", type: "short", options: [] },
+        { text: "How satisfied are you with availability of notice boards and information displays?", type: "multiple", options: ["Very satisfied", "Satisfied", "Neutral", "Dissatisfied"] },
+        { text: "How would you rate the safety of physical infrastructure (stairs, railings, flooring)?", type: "multiple", options: ["Very safe", "Safe", "Sometimes unsafe", "Unsafe"] },
+        { text: "How effective is the maintenance team in keeping facilities functional?", type: "multiple", options: ["Very effective", "Effective", "Average", "Ineffective"] },
+        { text: "Overall, how satisfied are you with school infrastructure and facilities?", type: "multiple", options: ["Very satisfied", "Satisfied", "Neutral", "Dissatisfied"] },
+        { text: "Any additional comments on infrastructure and facilities?", type: "short", options: [] }
+    ],
+    "Communication with Parents": [
+        { text: "How clear are the report cards or progress reports shared with parents?", type: "multiple", options: ["Very clear", "Clear", "Sometimes unclear", "Not clear"] },
+        { text: "How regularly are report cards shared with parents?", type: "multiple", options: ["Very regularly", "Regularly", "Sometimes irregularly", "Very irregularly"] },
+        { text: "How effective are parent-teacher meetings in discussing student progress?", type: "multiple", options: ["Very effective", "Effective", "Average", "Not effective"] },
+        { text: "How timely is communication about exams, tests, and important dates?", type: "multiple", options: ["Very timely", "Timely", "Sometimes late", "Often late"] },
+        { text: "How effective are circulars and notices in conveying information?", type: "multiple", options: ["Very effective", "Effective", "Average", "Not effective"] },
+        { text: "How satisfied are parents with digital communication channels (SMS, app, email) if used?", type: "multiple", options: ["Very satisfied", "Satisfied", "Neutral", "Dissatisfied"] },
+        { text: "How easy is it for parents to contact class teachers when needed?", type: "multiple", options: ["Very easy", "Easy", "Average", "Difficult"] },
+        { text: "How polite and helpful is staff communication with parents?", type: "multiple", options: ["Very polite", "Polite", "Sometimes impolite", "Impolite"] },
+        { text: "How clearly does the school communicate fee-related information and due dates?", type: "multiple", options: ["Very clearly", "Clearly", "Sometimes unclearly", "Not clearly"] },
+        { text: "How well does the school inform parents about student behavior or discipline issues?", type: "multiple", options: ["Very well", "Well", "Sometimes", "Rarely"] },
+        { text: "How well are parents informed about school events and activities?", type: "multiple", options: ["Very well", "Well", "Sometimes", "Rarely"] },
+        { text: "Rate the overall quality of communication between school and parents.", type: "rating", options: [] },
+        { text: "How responsive is the school when parents raise concerns?", type: "multiple", options: ["Very responsive", "Responsive", "Sometimes unresponsive", "Unresponsive"] },
+        { text: "Do parents feel their feedback is considered by the school?", type: "multiple", options: ["Always", "Often", "Sometimes", "Never"] },
+        { text: "How satisfied are parents with the language and tone used in communications?", type: "multiple", options: ["Very satisfied", "Satisfied", "Neutral", "Dissatisfied"] },
+        { text: "How clear is communication about curriculum and academic expectations?", type: "multiple", options: ["Very clear", "Clear", "Somewhat clear", "Not clear"] },
+        { text: "How clear is communication regarding school policies and changes?", type: "multiple", options: ["Very clear", "Clear", "Somewhat clear", "Not clear"] },
+        { text: "What is one thing that would improve communication with parents?", type: "short", options: [] },
+        { text: "How satisfied are you with reminders for events, deadlines, and meetings?", type: "multiple", options: ["Very satisfied", "Satisfied", "Neutral", "Dissatisfied"] },
+        { text: "How often do parents receive positive feedback about students, not only complaints?", type: "multiple", options: ["Very often", "Often", "Sometimes", "Rarely"] },
+        { text: "How convenient are the timings scheduled for parent-teacher meetings?", type: "multiple", options: ["Very convenient", "Convenient", "Sometimes inconvenient", "Inconvenient"] },
+        { text: "How effectively does the school communicate emergency information (sudden holidays, changes)?", type: "multiple", options: ["Very effectively", "Effectively", "Average", "Not effectively"] },
+        { text: "Overall, how satisfied are you with school–parent communication?", type: "multiple", options: ["Very satisfied", "Satisfied", "Neutral", "Dissatisfied"] },
+        { text: "Any other suggestions to improve communication with parents?", type: "short", options: [] },
+        { text: "Do you feel communication supports the student’s academic and personal growth?", type: "multiple", options: ["Strongly agree", "Agree", "Disagree", "Strongly disagree"] }
+    ],
+    "Administrative Support": [
+        { text: "How polite and helpful is the office/administrative staff?", type: "multiple", options: ["Very polite and helpful", "Helpful", "Sometimes unhelpful", "Unhelpful"] },
+        { text: "How easy is it to get certificates, letters, or documents from the office?", type: "multiple", options: ["Very easy", "Easy", "Average", "Difficult"] },
+        { text: "How clearly are fee payment processes and options explained?", type: "multiple", options: ["Very clearly", "Clearly", "Sometimes unclearly", "Not clearly"] },
+        { text: "How easy is it for parents/students to clarify fee-related doubts?", type: "multiple", options: ["Very easy", "Easy", "Average", "Difficult"] },
+        { text: "How timely are receipts and confirmations provided after fee payment?", type: "multiple", options: ["Very timely", "Timely", "Sometimes delayed", "Often delayed"] },
+        { text: "How efficient is the admission/withdrawal process?", type: "multiple", options: ["Very efficient", "Efficient", "Average", "Inefficient"] },
+        { text: "How satisfied are you with support for ID cards, bus passes, or other school documents?", type: "multiple", options: ["Very satisfied", "Satisfied", "Neutral", "Dissatisfied"] },
+        { text: "How well does the admin staff handle parent or student complaints?", type: "multiple", options: ["Very well", "Well", "Average", "Poorly"] },
+        { text: "How courteous is the staff when responding in person or over phone?", type: "multiple", options: ["Very courteous", "Courteous", "Sometimes rude", "Rude"] },
+        { text: "How often do you face long waiting times at the office?", type: "multiple", options: ["Never", "Rarely", "Sometimes", "Often"] },
+        { text: "Rate the overall efficiency of administrative support.", type: "rating", options: [] },
+        { text: "How well are office timings aligned with parent/student convenience?", type: "multiple", options: ["Very well", "Well", "Average", "Poorly"] },
+        { text: "How clearly does admin staff explain procedures and required documents?", type: "multiple", options: ["Very clearly", "Clearly", "Somewhat clearly", "Not clearly"] },
+        { text: "How effectively are lost ID cards or records handled?", type: "multiple", options: ["Very effectively", "Effectively", "Average", "Not effectively"] },
+        { text: "How transparent are fee-related policies (refunds, fines, concessions)?", type: "multiple", options: ["Very transparent", "Transparent", "Somewhat unclear", "Not transparent"] },
+        { text: "What is one administrative process you find most difficult?", type: "short", options: [] },
+        { text: "What change in administrative support would help you the most?", type: "short", options: [] },
+        { text: "How satisfied are you with communication from admin regarding holidays and schedule changes?", type: "multiple", options: ["Very satisfied", "Satisfied", "Neutral", "Dissatisfied"] },
+        { text: "How well does admin coordinate with teachers for student-related updates?", type: "multiple", options: ["Very well", "Well", "Average", "Poorly"] },
+        { text: "How often do you experience errors in records (names, marks, IDs, etc.)?", type: "multiple", options: ["Never", "Rarely", "Sometimes", "Often"] },
+        { text: "How quickly are such record errors corrected when reported?", type: "multiple", options: ["Very quickly", "Quickly", "Slowly", "Not corrected"] },
+        { text: "How satisfied are you with the handling of scholarships or concessions (if applicable)?", type: "multiple", options: ["Very satisfied", "Satisfied", "Neutral", "Dissatisfied"] },
+        { text: "Overall, how satisfied are you with administrative support?", type: "multiple", options: ["Very satisfied", "Satisfied", "Neutral", "Dissatisfied"] },
+        { text: "Any other suggestions to improve administrative support?", type: "short", options: [] }
+    ],
+    "Transport Services": [
+        { text: "How safe do you feel while using school transport?", type: "multiple", options: ["Very safe", "Safe", "Sometimes unsafe", "Unsafe"] },
+        { text: "How punctual is the school transport in the morning?", type: "multiple", options: ["Always on time", "Usually on time", "Sometimes late", "Often late"] },
+        { text: "How punctual is the school transport at dispersal time?", type: "multiple", options: ["Always on time", "Usually on time", "Sometimes late", "Often late"] },
+        { text: "How polite and responsible are the drivers?", type: "multiple", options: ["Very polite and responsible", "Responsible", "Sometimes irresponsible", "Irresponsible"] },
+        { text: "How polite and helpful are the attendants/support staff on the bus/van?", type: "multiple", options: ["Very polite and helpful", "Helpful", "Sometimes unhelpful", "Unhelpful"] },
+        { text: "How comfortable are the seats and space in the transport vehicle?", type: "multiple", options: ["Very comfortable", "Comfortable", "Average", "Uncomfortable"] },
+        { text: "How satisfied are you with safety measures like seat belts, speed control, and supervision?", type: "multiple", options: ["Very satisfied", "Satisfied", "Neutral", "Dissatisfied"] },
+        { text: "How clean is the vehicle you travel in?", type: "multiple", options: ["Very clean", "Clean", "Sometimes unclean", "Not clean"] },
+        { text: "How well does the school handle transport-related complaints?", type: "multiple", options: ["Very well", "Well", "Average", "Poorly"] },
+        { text: "How clearly are pick-up and drop-off points and timings communicated?", type: "multiple", options: ["Very clearly", "Clearly", "Sometimes unclearly", "Not clearly"] },
+        { text: "Rate the overall quality of the school transport service.", type: "rating", options: [] },
+        { text: "How safe do you feel while boarding and getting down from the vehicle?", type: "multiple", options: ["Very safe", "Safe", "Sometimes unsafe", "Unsafe"] },
+        { text: "How satisfied are you with the route planning and travel time?", type: "multiple", options: ["Very satisfied", "Satisfied", "Neutral", "Dissatisfied"] },
+        { text: "How often do you face overcrowding in the vehicle?", type: "multiple", options: ["Never", "Rarely", "Sometimes", "Often"] },
+        { text: "How well are traffic rules followed by the school vehicle?", type: "multiple", options: ["Always", "Often", "Sometimes", "Rarely"] },
+        { text: "How promptly are parents informed about transport delays or changes?", type: "multiple", options: ["Very promptly", "Promptly", "Sometimes late", "Not informed"] },
+        { text: "What do you like most about the school transport service?", type: "short", options: [] },
+        { text: "What is one improvement that would make your transport experience better?", type: "short", options: [] },
+        { text: "How satisfied are you with emergency preparedness for breakdowns or accidents?", type: "multiple", options: ["Very satisfied", "Satisfied", "Neutral", "Dissatisfied"] },
+        { text: "How often do you feel transport timings affect your punctuality in class?", type: "multiple", options: ["Never", "Rarely", "Sometimes", "Often"] },
+        { text: "How satisfied are you with communication regarding changes in driver/route?", type: "multiple", options: ["Very satisfied", "Satisfied", "Neutral", "Dissatisfied"] },
+        { text: "How well does the transport fee match the quality of service provided?", type: "multiple", options: ["Very well", "Well", "Average", "Poorly"] },
+        { text: "Overall, how satisfied are you with school transport services?", type: "multiple", options: ["Very satisfied", "Satisfied", "Neutral", "Dissatisfied"] },
+        { text: "Any other comments about transport services?", type: "short", options: [] },
+        { text: "How often do you face issues with pick-up/drop location confusion?", type: "multiple", options: ["Never", "Rarely", "Sometimes", "Often"] }
+    ]
+};
+
+// Fallback generic template if a service name is not in the map
+const genericDefaultQuestionsTemplate = [
+    {
+        text: "Overall, how would you rate this service?",
+        type: "multiple",
+        options: ["Excellent", "Good", "Decent", "Bad"]
+    },
+    {
+        text: "What did you like the most about this service?",
+        type: "short",
+        options: []
+    },
+    {
+        text: "What is one thing that should be improved in this service?",
+        type: "short",
+        options: []
+    }
+];
+
+let formState = {
+    id: null,
+    domain: "school",
+    name: "Untitled Form",
+    services: [],
+    overallRating: 0,
+    ratingReason: ""
+};
+
+async function initBuilder() {
+    // If template id in URL -> load existing template
+    if (templateIdFromUrl) {
+        try {
+            const res = await fetch("https://web-production-315e.up.railway.app/load-form-template?id=" + templateIdFromUrl);
+            if (res.ok) {
+                const loaded = await res.json();
+                formState = loaded;
+                if (!formState.domain) formState.domain = "school";
+            }
+        } catch (e) {
+            console.warn("Could not load template by id:", e);
+        }
+    } else {
+        // New template based on selected services
+        if (!config || !config.services || config.services.length === 0) {
+            servicesContainer.innerHTML = "<p class='subtext'>No services selected. Please go back and choose templates.</p>";
+        } else {
+            // For each selected service, attach a facility-specific question set (25+ questions each). [web:24][web:27]
+            formState.services = config.services.map(serviceName => {
+                const bank = facilityQuestionBank[serviceName] || genericDefaultQuestionsTemplate;
+                // Deep clone to avoid reference issues when editing
+                const clonedQuestions = JSON.parse(JSON.stringify(bank));
+                return {
+                    name: serviceName,
+                    questions: clonedQuestions
+                };
+            });
+        }
+    }
+
+    formNameInput.value = formState.name || "Untitled Form";
+    formNameInput.addEventListener('input', () => {
+        formState.name = formNameInput.value;
+    });
+
+    renderServices();
+    setupRating();
+    if (formState.overallRating > 0) {
+        setOverallRating(formState.overallRating);
+        if (formState.ratingReason) {
+            document.getElementById('ratingReason').value = formState.ratingReason;
+        }
+    }
+}
+
+function renderServices() {
+    servicesContainer.innerHTML = "";
+    formState.services.forEach((service, sIdx) => {
+        const section = document.createElement('section');
+        section.className = 'service-section';
+
+        const header = document.createElement('div');
+        header.className = 'service-header-row';
+        const title = document.createElement('h3');
+        title.textContent = service.name;
+        const addBtn = document.createElement('button');
+        addBtn.textContent = "Add Question";
+        addBtn.type = "button";
+        addBtn.onclick = () => addQuestion(sIdx);
+
+        header.appendChild(title);
+        header.appendChild(addBtn);
+        section.appendChild(header);
+
+        const questionsContainer = document.createElement('div');
+        questionsContainer.className = 'questions-container';
+
+        service.questions.forEach((q, qIdx) => {
+            const qBox = document.createElement('div');
+            qBox.className = 'question-box';
+            qBox.draggable = true;
+            qBox.dataset.serviceIndex = sIdx;
+            qBox.dataset.questionIndex = qIdx;
+
+            qBox.addEventListener('dragstart', onDragStart);
+            qBox.addEventListener('dragover', onDragOver);
+            qBox.addEventListener('drop', onDrop);
+
+            const qRow = document.createElement('div');
+            qRow.className = 'question-row';
+
+            const dragHandle = document.createElement('span');
+            dragHandle.className = 'drag-handle';
+            dragHandle.textContent = "≡";
+
+            const qInput = document.createElement('input');
+            qInput.type = 'text';
+            qInput.value = q.text;
+            qInput.oninput = (e) => {
+                formState.services[sIdx].questions[qIdx].text = e.target.value;
+            };
+
+            const typeSelect = document.createElement('select');
+            typeSelect.className = 'type-select';
+            ["multiple", "short", "rating"].forEach(t => {
+                const opt = document.createElement('option');
+                opt.value = t;
+                opt.textContent = (t === "multiple" ? "Multiple Choice" :
+                                   t === "short" ? "Short Answer" : "Rating (1–5)");
+                if (q.type === t) opt.selected = true;
+                typeSelect.appendChild(opt);
+            });
+            typeSelect.onchange = (e) => {
+                formState.services[sIdx].questions[qIdx].type = e.target.value;
+                if (e.target.value === "short" || e.target.value === "rating") {
+                    formState.services[sIdx].questions[qIdx].options = [];
+                } else if (e.target.value === "multiple" && (!q.options || q.options.length === 0)) {
+                    formState.services[sIdx].questions[qIdx].options = ["Excellent", "Good", "Decent", "Bad"];
+                }
+                renderServices();
+            };
+
+            const deleteBtn = document.createElement('button');
+            deleteBtn.type = 'button';
+            deleteBtn.textContent = "Delete";
+            deleteBtn.className = 'delete-question-btn';
+            deleteBtn.onclick = () => deleteQuestion(sIdx, qIdx);
+
+            qRow.appendChild(dragHandle);
+            qRow.appendChild(qInput);
+            qRow.appendChild(typeSelect);
+            qRow.appendChild(deleteBtn);
+            qBox.appendChild(qRow);
+
+            if (q.type === "multiple") {
+                const optionsRow = document.createElement('div');
+                optionsRow.className = 'options-row';
+
+                q.options.forEach((opt, optIdx) => {
+                    const optInput = document.createElement('input');
+                    optInput.type = 'text';
+                    optInput.value = opt;
+                    optInput.oninput = (e) => {
+                        formState.services[sIdx].questions[qIdx].options[optIdx] = e.target.value;
+                    };
+                    optionsRow.appendChild(optInput);
+                });
+
+                qBox.appendChild(optionsRow);
+            } else if (q.type === "short") {
+                const info = document.createElement('p');
+                info.className = 'subtext';
+                info.textContent = "Short answer field (open text).";
+                qBox.appendChild(info);
+            } else if (q.type === "rating") {
+                const info = document.createElement('p');
+                info.className = 'subtext';
+                info.textContent = "Rating scale 1–5 for this question.";
+                qBox.appendChild(info);
+            }
+
+            questionsContainer.appendChild(qBox);
+        });
+
+        section.appendChild(questionsContainer);
+        servicesContainer.appendChild(section);
+    });
+}
+
+function addQuestion(serviceIndex) {
+    formState.services[serviceIndex].questions.push({
+        text: "New question",
+        type: "multiple",
+        options: ["Excellent", "Good", "Decent", "Bad"]
+    });
+    renderServices();
+}
+
+function deleteQuestion(serviceIndex, questionIndex) {
+    formState.services[serviceIndex].questions.splice(questionIndex, 1);
+    renderServices();
+}
+
+// Drag-and-drop
+let dragData = null;
+
+function onDragStart(e) {
+    const sIndex = e.currentTarget.dataset.serviceIndex;
+    const qIndex = e.currentTarget.dataset.questionIndex;
+    dragData = { serviceIndex: parseInt(sIndex), questionIndex: parseInt(qIndex) };
+    e.dataTransfer.effectAllowed = "move";
+}
+
+function onDragOver(e) {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+}
+
+function onDrop(e) {
+    e.preventDefault();
+    if (!dragData) return;
+
+    const targetS = parseInt(e.currentTarget.dataset.serviceIndex);
+    const targetQ = parseInt(e.currentTarget.dataset.questionIndex);
+
+    if (dragData.serviceIndex !== targetS) return;
+
+    const arr = formState.services[targetS].questions;
+    const moved = arr.splice(dragData.questionIndex, 1)[0];
+    arr.splice(targetQ, 0, moved);
+
+    dragData = null;
+    renderServices();
+}
+
+// Overall rating
+const starsContainer = document.getElementById('starsContainer');
+const ratingLabel = document.getElementById('ratingLabel');
+const reasonContainer = document.getElementById('reasonContainer');
+const ratingReason = document.getElementById('ratingReason');
+
+function setupRating() {
+    starsContainer.querySelectorAll('span').forEach(star => {
+        star.addEventListener('click', () => {
+            const val = parseInt(star.getAttribute('data-value'));
+            setOverallRating(val);
+        });
+    });
+}
+
+function setOverallRating(val) {
+    formState.overallRating = val;
+    starsContainer.querySelectorAll('span').forEach(s => {
+        const sv = parseInt(s.getAttribute('data-value'));
+        s.classList.toggle('active-star', sv <= val);
+    });
+    ratingLabel.textContent = "Rating: " + val + " / 5";
+
+    if (val <= 2) {
+        reasonContainer.style.display = 'block';
+    } else {
+        reasonContainer.style.display = 'none';
+        ratingReason.value = "";
+        formState.ratingReason = "";
+    }
+}
+
+ratingReason.addEventListener('input', () => {
+    formState.ratingReason = ratingReason.value;
+});
+
+// Save Draft / Submit
+async function saveDraft() {
+    try {
+        const payload = { ...formState, status: "draft" };
+        const res = await fetch("https://web-production-315e.up.railway.app/save-form-template", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (res.ok && data.id) {
+            formState.id = data.id;
+            alert("Draft saved successfully.");
+        } else {
+            alert(data.error || "Failed to save draft.");
+        }
+    } catch (e) {
+        console.error(e);
+        alert("Failed to save draft.");
+    }
+}
+
+async function submitForm() {
+    if (formState.overallRating === 0) {
+        alert("Please set an overall rating before submitting.");
+        return;
+    }
+
+    try {
+        const payload = { ...formState, status: "final" };
+        const res = await fetch("https://web-production-315e.up.railway.app/save-form-template", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (res.ok && data.id) {
+            formState.id = data.id;
+            alert("Form template saved as final.");
+        } else {
+            alert(data.error || "Failed to submit form template.");
+        }
+    } catch (e) {
+        console.error(e);
+        alert("Failed to submit form template.");
+    }
+}
+
+function goBackToTemplates() {
+    window.location.href = "school-templates.html";
+}
+
+initBuilder();
+</script>
+
+</body>
+</html>

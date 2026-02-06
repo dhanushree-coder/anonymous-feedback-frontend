@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Saved Drafts</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="admin-home.css">
+    <link rel="stylesheet" href="drafts.css">
+</head>
+<body>
+
+<nav class="navbar">
+    <div class="logo">Anonymous Feedback System - Saved Drafts</div>
+</nav>
+
+<div class="drafts-container">
+    <header class="drafts-header">
+        <h2>Saved Drafts & Templates</h2>
+        <p class="subtext">
+            View, filter, open and delete saved drafts across all domains.
+        </p>
+        <button class="back-btn" onclick="goBack()">← Back to Dashboard</button>
+    </header>
+
+    <!-- New small tabs row, but kept same general layout -->
+    <section class="section-box" style="margin-bottom: 15px;">
+        <div class="drafts-tabs-row">
+            <button id="tabDrafts" class="drafts-tab-btn active">Saved Drafts</button>
+            <button id="tabCreated" class="drafts-tab-btn">Saved / Created Forms</button>
+        </div>
+        <p class="subtext" id="tabHelperText">
+            Showing drafts you are still working on (status = draft).
+        </p>
+    </section>
+
+    <section class="section-box">
+        <h3>Filter Drafts</h3>
+        <div class="drafts-filters">
+            <input type="text" id="filterName" placeholder="Search by form name">
+            <select id="filterDomain">
+                <option value="">All Domains</option>
+                <option value="school">Schools</option>
+                <option value="college">Colleges</option>
+                <option value="corporate">Corporates</option>
+                <option value="government">Government Services</option>
+            </select>
+            <input type="date" id="filterDate">
+            <button id="applyFilterBtn">Filter</button>
+            <button id="clearFilterBtn">Clear</button>
+        </div>
+    </section>
+
+    <section class="section-box drafts-list-section">
+        <h3 id="tableTitle">Saved Drafts</h3>
+        <table class="dash-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Domain</th>
+                    <th>Form Name</th>
+                    <th>Status</th>
+                    <th>Updated At</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="draftsTableBody">
+                <tr>
+                    <td colspan="6">Loading drafts...</td>
+                </tr>
+            </tbody>
+        </table>
+    </section>
+</div>
+
+<script>
+let allTemplates = [];  // all templates from backend
+let currentView = "drafts"; // "drafts" or "created"
+
+const tableBody = document.getElementById('draftsTableBody');
+const filterName = document.getElementById('filterName');
+const filterDomain = document.getElementById('filterDomain');
+const filterDate = document.getElementById('filterDate');
+const applyFilterBtn = document.getElementById('applyFilterBtn');
+const clearFilterBtn = document.getElementById('clearFilterBtn');
+
+const tabDrafts = document.getElementById('tabDrafts');
+const tabCreated = document.getElementById('tabCreated');
+const tabHelperText = document.getElementById('tabHelperText');
+const tableTitle = document.getElementById('tableTitle');
+
+async function loadDrafts() {
+    try {
+        const res = await fetch("https://web-production-315e.up.railway.app/list-form-templates");
+        if (!res.ok) {
+            tableBody.innerHTML = "<tr><td colspan='6'>Failed to load forms.</td></tr>";
+            return;
+        }
+        allTemplates = await res.json();
+        renderTable();
+    } catch (e) {
+        console.error(e);
+        tableBody.innerHTML = "<tr><td colspan='6'>Failed to load forms.</td></tr>";
+    }
+}
+
+function getFilteredTemplates() {
+    const nameVal = filterName.value.toLowerCase();
+    const domainVal = filterDomain.value;
+    const dateVal = filterDate.value;
+
+    return allTemplates.filter(t => {
+        // view-based filter
+        if (currentView === "drafts" && t.status !== "draft") {
+            return false;
+        }
+        if (currentView === "created" && t.status === "draft") {
+            return false;
+        }
+
+        let ok = true;
+        if (nameVal) {
+            ok = ok && (t.name || "").toLowerCase().includes(nameVal);
+        }
+        if (domainVal) {
+            ok = ok && t.domain === domainVal;
+        }
+        if (dateVal) {
+            const updatedDate = (t.updated_at || "").slice(0, 10);
+            ok = ok && updatedDate === dateVal;
+        }
+        return ok;
+    });
+}
+
+function renderTable() {
+    const filtered = getFilteredTemplates();
+
+    if (currentView === "drafts") {
+        tableTitle.textContent = "Saved Drafts";
+        tabHelperText.textContent = "Showing drafts you are still working on (status = draft).";
+    } else {
+        tableTitle.textContent = "Saved / Created Forms";
+        tabHelperText.textContent = "Showing forms that were submitted/created (status is not draft). Use Publish to generate a link.";
+    }
+
+    if (filtered.length === 0) {
+        tableBody.innerHTML = "<tr><td colspan='6'>No forms found.</td></tr>";
+        return;
+    }
+
+    tableBody.innerHTML = "";
+    filtered.forEach(d => {
+        const tr = document.createElement('tr');
+
+        const tdId = document.createElement('td');
+        tdId.textContent = d.id;
+
+        const tdDomain = document.createElement('td');
+        tdDomain.textContent = d.domain;
+
+        const tdName = document.createElement('td');
+        tdName.textContent = d.name;
+
+        const tdStatus = document.createElement('td');
+        tdStatus.textContent = d.status;
+
+        const tdUpdated = document.createElement('td');
+        tdUpdated.textContent = d.updated_at;
+
+        const tdActions = document.createElement('td');
+        tdActions.className = "actions-cell";
+
+        const openBtn = document.createElement('button');
+        openBtn.textContent = "Open";
+        openBtn.className = "open-btn";
+        openBtn.onclick = () => openDraft(d.id, d.domain);
+
+        const delBtn = document.createElement('button');
+        delBtn.textContent = "Delete";
+        delBtn.className = "delete-btn";
+        delBtn.onclick = () => deleteDraft(d.id);
+
+        tdActions.appendChild(openBtn);
+        tdActions.appendChild(delBtn);
+
+        // In created view, show Publish button
+        if (currentView === "created") {
+            const publishBtn = document.createElement('button');
+            publishBtn.textContent = "Publish";
+            publishBtn.className = "open-btn"; // use same green style
+            publishBtn.onclick = () => goToPublish(d.id);
+            tdActions.appendChild(publishBtn);
+        }
+
+        tr.appendChild(tdId);
+        tr.appendChild(tdDomain);
+        tr.appendChild(tdName);
+        tr.appendChild(tdStatus);
+        tr.appendChild(tdUpdated);
+        tr.appendChild(tdActions);
+
+        tableBody.appendChild(tr);
+    });
+}
+
+async function deleteDraft(id) {
+    if (!confirm("Are you sure you want to delete form #" + id + "?")) return;
+    try {
+        const res = await fetch("https://web-production-315e.up.railway.app/delete-form-template/" + id, {
+            method: "DELETE"
+        });
+        if (!res.ok) {
+            alert("Failed to delete form.");
+            return;
+        }
+        allTemplates = allTemplates.filter(d => d.id !== id);
+        renderTable();
+    } catch (e) {
+        console.error(e);
+        alert("Failed to delete form.");
+    }
+}
+
+// Route drafts based on domain, kept same pattern
+function openDraft(id, domain) {
+    if (domain === "school") {
+        window.location.href = "form-builder.html?id=" + id;
+    } else if (domain === "college") {
+        alert("Form builder not yet implemented for domain: " + domain);
+    } else if (domain === "corporate") {
+        alert("Form builder not yet implemented for domain: " + domain);
+    } else if (domain === "government") {
+        alert("Form builder not yet implemented for domain: " + domain);
+    } else {
+        window.location.href = "create-form.html?id=" + id;
+    }
+}
+
+function goToPublish(id) {
+    window.location.href = "publish-form.html?id=" + id;
+}
+
+applyFilterBtn.addEventListener('click', renderTable);
+clearFilterBtn.addEventListener('click', () => {
+    filterName.value = "";
+    filterDomain.value = "";
+    filterDate.value = "";
+    renderTable();
+});
+
+tabDrafts.addEventListener('click', () => {
+    currentView = "drafts";
+    tabDrafts.classList.add("active");
+    tabCreated.classList.remove("active");
+    renderTable();
+});
+
+tabCreated.addEventListener('click', () => {
+    currentView = "created";
+    tabCreated.classList.add("active");
+    tabDrafts.classList.remove("active");
+    renderTable();
+});
+
+function goBack() {
+    window.location.href = "admin-dashboard.html";
+}
+
+loadDrafts();
+</script>
+
+</body>
+</html>

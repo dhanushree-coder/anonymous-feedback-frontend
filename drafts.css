@@ -1,0 +1,198 @@
+.drafts-container {
+    min-height: 100vh;
+    padding-top: 70px;
+    padding: 90px 40px 40px 40px;
+}
+
+.drafts-header {
+    margin-bottom: 20px;
+}
+
+.drafts-header h2 {
+    margin-bottom: 10px;
+}
+
+.subtext {
+    color: #e0fff3;
+}
+
+.back-btn {
+    margin-top: 10px;
+    padding: 8px 14px;
+    border-radius: 6px;
+    border: none;
+    background: #00ff99;
+    color: #000000;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.back-btn:hover {
+    box-shadow: 0 0 10px #00ff99;
+}
+
+/* Tabs row above table (for drafts vs created) */
+
+.drafts-tabs-row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.drafts-tab-btn {
+    padding: 6px 12px;
+    border-radius: 6px;
+    border: 1px solid #00ff99;
+    background: rgba(0, 0, 0, 0.85);
+    color: #e0fff3;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: background 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+}
+
+.drafts-tab-btn.active {
+    background: #00ff99;
+    color: #000000;
+    border-color: #00ff99;
+    box-shadow: 0 0 10px rgba(0, 255, 153, 0.6);
+}
+
+/* Filters inside section-box */
+
+.drafts-filters {
+    margin-top: 10px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.drafts-filters input[type="text"],
+.drafts-filters input[type="date"],
+.drafts-filters select {
+    padding: 8px;
+    border-radius: 6px;
+    border: 1px solid #00ff99;
+    background: transparent;
+    color: #ffffff;
+    outline: none;
+}
+
+/* Dark themed select with smooth hover */
+.drafts-filters select {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background-color: rgba(0, 0, 0, 0.85);
+    background-image: linear-gradient(45deg, transparent 50%, #00ff99 50%),
+                      linear-gradient(135deg, #00ff99 50%, transparent 50%);
+    background-position: calc(100% - 18px) 50%, calc(100% - 12px) 50%;
+    background-size: 6px 6px, 6px 6px;
+    background-repeat: no-repeat;
+    padding-right: 26px;
+    transition: border-color 0.25s ease, box-shadow 0.25s ease, background-color 0.25s ease;
+}
+
+/* Options inside dropdown: dark bg, light text */
+.drafts-filters select option {
+    background-color: #000000;
+    color: #e0fff3;
+}
+
+/* Hover/focus on the select itself */
+.drafts-filters select:hover,
+.drafts-filters select:focus {
+    border-color: #00ffcc;
+    box-shadow: 0 0 10px rgba(0, 255, 153, 0.6);
+    background-color: rgba(0, 0, 0, 0.95);
+}
+
+/* Selected/hovered options (where supported by browser) */
+.drafts-filters select option:checked,
+.drafts-filters select option:hover {
+    background-color: #003322;
+    color: #ffffff;
+}
+
+.drafts-filters button {
+    padding: 8px 14px;
+    border-radius: 6px;
+    border: none;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+#applyFilterBtn {
+    background: #00ff99;
+    color: #000000;
+}
+
+#applyFilterBtn:hover {
+    box-shadow: 0 0 10px #00ff99;
+}
+
+#clearFilterBtn {
+    background: #ff0066;
+    color: #ffffff;
+}
+
+#clearFilterBtn:hover {
+    box-shadow: 0 0 10px #ff0066;
+}
+
+/* Drafts list uses .section-box and .dash-table from admin-home.css */
+
+.drafts-list-section {
+    margin-top: 20px;
+}
+
+.open-btn,
+.delete-btn {
+    padding: 6px 10px;
+    border-radius: 6px;
+    border: none;
+    font-size: 0.85rem;
+    cursor: pointer;
+    margin-right: 6px;
+}
+
+.open-btn {
+    background: #00ff99;
+    color: #000000;
+}
+
+.open-btn:hover {
+    box-shadow: 0 0 10px #00ff99;
+}
+
+.delete-btn {
+    background: #ff0066;
+    color: #ffffff;
+}
+
+.delete-btn:hover {
+    box-shadow: 0 0 10px #ff0066;
+}
+
+/* Actions cell so multiple buttons stay aligned nicely */
+
+.actions-cell button {
+    margin-right: 6px;
+}
+
+/* Responsive */
+
+@media (max-width: 768px) {
+    .drafts-container {
+        padding: 90px 20px 20px 20px;
+    }
+
+    .drafts-filters {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .drafts-tabs-row {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+}

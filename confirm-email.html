@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Confirm Your Email</title>
+    <link rel="stylesheet" href="confirm-email.css">
+</head>
+<body>
+<div class="signup-container" style="background-color:black;">
+    <h2>Confirm Your Email</h2>
+    <p id="message">A verification email has been sent.</p>
+    <p>Please check your inbox and click the verification link.</p>
+
+    <div style="margin-top: 20px;">
+        <button id="checkStatusBtn">I verified my account</button>
+    </div>
+
+    <div style="margin-top: 10px;">
+        <button id="resendBtn">Resend verification email</button>
+    </div>
+
+    <p id="statusText" style="margin-top: 15px; color: #cccccc;"></p>
+
+    <div id="goToLoginContainer" style="margin-top: 15px; display: none;">
+        <a href="login.html"><button>Go to Login</button></a>
+    </div>
+</div>
+
+<script>
+const email = new URLSearchParams(window.location.search).get('email');
+const messageEl = document.getElementById('message');
+const statusText = document.getElementById('statusText');
+const checkStatusBtn = document.getElementById('checkStatusBtn');
+const resendBtn = document.getElementById('resendBtn');
+const goToLoginContainer = document.getElementById('goToLoginContainer');
+
+if (email) {
+    messageEl.textContent = `A verification email has been sent to ${email}.`;
+} else {
+    messageEl.textContent = "A verification email has been sent to your email address.";
+}
+
+// Check verification status when user clicks "I verified my account"
+checkStatusBtn.addEventListener('click', async () => {
+    if (!email) {
+        statusText.textContent = "Email not found in URL.";
+        return;
+    }
+
+    try {
+        const res = await fetch("https://web-production-315e.up.railway.app/check-verification", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email })
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+            statusText.textContent = data.error || "Unable to check verification status.";
+            return;
+        }
+
+        if (!data.exists) {
+            statusText.textContent = "Account not found. Please sign up again.";
+            return;
+        }
+
+        if (data.is_verified === 1) {
+            statusText.textContent = "Your account is ready. You can now log in.";
+            goToLoginContainer.style.display = "block";
+        } else {
+            statusText.textContent = "Your account has not been verified yet. Please click the link in the email.";
+        }
+    } catch (err) {
+        console.error(err);
+        statusText.textContent = "Server not reachable.";
+    }
+});
+
+// Resend verification email
+resendBtn.addEventListener('click', async () => {
+    if (!email) {
+        statusText.textContent = "Email not found in URL.";
+        return;
+    }
+
+    try {
+        const res = await fetch("https://web-production-315e.up.railway.app/resend-verification", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email })
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+            statusText.textContent = data.error || "Unable to resend verification email.";
+            return;
+        }
+
+        statusText.textContent = "Verification email resent. Please check your inbox.";
+    } catch (err) {
+        console.error(err);
+        statusText.textContent = "Server not reachable.";
+    }
+});
+</script>
+</body>
+</html>

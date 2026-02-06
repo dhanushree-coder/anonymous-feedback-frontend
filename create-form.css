@@ -1,0 +1,187 @@
+/* Layout consistent with existing builder pages */
+.form-builder-container {
+    min-height: 100vh;
+    padding: 90px 40px 30px 40px;
+}
+
+/* Domain row styled like form-name-row */
+.form-domain-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 10px 0 5px 0;
+}
+
+.form-domain-row label {
+    min-width: 90px;
+}
+
+/* Inputs, selects, textareas: dark neon theme */
+.form-name-row input,
+.form-domain-row select,
+.section-title-input,
+.question-row input,
+.question-description,
+.options-box input {
+    background: rgba(0, 0, 0, 0.85);
+    border: 1px solid rgba(0, 255, 153, 0.6);
+    color: #e0fff3;
+    border-radius: 6px;
+    padding: 6px 8px;
+    font: inherit;
+}
+
+.form-name-row input:focus,
+.form-domain-row select:focus,
+.section-title-input:focus,
+.question-row input:focus,
+.question-description:focus,
+.options-box input:focus {
+    outline: none;
+    box-shadow: 0 0 8px #00ff99;
+}
+
+/* Domain dropdown + list appearance */
+.form-domain-row select {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background-color: rgba(0, 0, 0, 0.85);
+    color: #e0fff3;
+    background-image: linear-gradient(45deg, transparent 50%, #00ff99 50%),
+                      linear-gradient(135deg, #00ff99 50%, transparent 50%);
+    background-position: calc(100% - 16px) calc(50% - 3px),
+                         calc(100% - 11px) calc(50% - 3px);
+    background-size: 6px 6px, 6px 6px;
+    background-repeat: no-repeat;
+    padding-right: 30px;
+}
+
+/* For browsers that show native dropdown list */
+.form-domain-row select option {
+    background-color: #000000;
+    color: #e0fff3;
+}
+
+/* Section title input */
+.section-title-input {
+    flex: 1;
+}
+
+/* Header row for each section */
+.service-header-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+/* Header actions container: Add Question + Add New Section */
+.service-header-actions {
+    display: flex;
+    gap: 8px;
+}
+
+/* Buttons inside header (Add Question, Add New Section) */
+.service-header-actions button {
+    padding: 6px 12px;
+    border-radius: 6px;
+    border: none;
+    background: #00ff99;
+    color: #000000;
+    font-weight: bold;
+    cursor: pointer;
+    font-size: 0.9rem;
+}
+
+.service-header-actions button:hover {
+    box-shadow: 0 0 10px #00ff99;
+}
+
+/* Slight variation for "Add New Section" to visually separate */
+.add-section-btn {
+    background: #ffcc00;
+    color: #000000;
+}
+
+.add-section-btn:hover {
+    box-shadow: 0 0 10px #ffcc00;
+}
+
+/* Question row */
+.question-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+}
+
+/* Duplicate / Delete etc. */
+.question-row button {
+    padding: 5px 10px;
+    border-radius: 6px;
+    border: none;
+    font-size: 0.8rem;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+/* Duplicate button (second from end) */
+.question-row button:nth-last-child(2) {
+    background: #0088ff;
+    color: #ffffff;
+}
+
+.question-row button:nth-last-child(2):hover {
+    box-shadow: 0 0 10px #0088ff;
+}
+
+/* Delete button */
+.delete-question-btn {
+    background: #ff0066;
+    color: #ffffff;
+}
+
+.delete-question-btn:hover {
+    box-shadow: 0 0 10px #ff0066;
+}
+
+/* Required toggle */
+.required-toggle {
+    font-size: 0.8rem;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+/* Description field */
+.question-description {
+    width: 100%;
+    min-height: 50px;
+    resize: vertical;
+    margin-top: 6px;
+}
+
+/* Bottom actions */
+.form-builder-actions {
+    margin-top: 20px;
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .form-builder-container {
+        padding: 90px 20px 20px 20px;
+    }
+
+    .form-domain-row {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .question-row {
+        flex-wrap: wrap;
+    }
+}
