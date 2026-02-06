@@ -2,139 +2,433 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Publish Form</title>
+    <title>Anonymous Feedback Form</title>
     <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="admin-home.css">
     <style>
-        .publish-container {
-            min-height: 100vh;
-            padding-top: 90px;
-            padding: 90px 40px 40px 40px;
-        }
-        .publish-box {
-            max-width: 600px;
-            margin: 0 auto;
-            background: rgba(0, 0, 0, 0.7);
-            border-radius: 12px;
-            box-shadow: 0 0 15px #00ff99;
+        .public-form-container {
+            max-width: 900px;
+            margin: 40px auto;
+            background-color: #111;
             padding: 20px 25px;
+            border-radius: 8px;
         }
-        .publish-box h2 {
+        .public-form-header h2 {
             margin-bottom: 10px;
         }
-        .publish-link-box {
-            margin-top: 15px;
-            padding: 10px;
+        .public-section {
+            margin-top: 25px;
+            border-top: 1px solid #333;
+            padding-top: 15px;
+        }
+        .public-question {
+            margin-bottom: 15px;
+        }
+        .public-question label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        .public-question .subtext {
+            margin-bottom: 5px;
+        }
+        .public-question input[type="text"],
+        .public-question textarea,
+        .public-question select {
+            width: 100%;
+            padding: 8px;
             background-color: #000;
+            color: #fff;
+            border: 1px solid #444;
             border-radius: 4px;
-            border: 1px solid #333;
-            word-break: break-all;
-            font-size: 14px;
-            color: #e0fff3;
         }
-        .publish-actions {
-            margin-top: 20px;
-            display: flex;
-            justify-content: flex-end;
-            gap: 10px;
+        .rating-choices span {
+            cursor: pointer;
+            font-size: 20px;
+            margin-right: 5px;
         }
-        .subtext-small {
-            color: #e0fff3;
-            font-size: 0.9rem;
-            margin-top: 8px;
+        .rating-choices span.active {
+            color: #ffd700;
+        }
+        .public-submit-row {
+            margin-top: 25px;
+            text-align: right;
+        }
+        .public-submit-row button {
+            padding: 8px 16px;
+        }
+        .stars-container span {
+            cursor: pointer;
+            font-size: 24px;
+            margin-right: 5px;
+        }
+        .stars-container span.active {
+            color: #ffd700;
+        }
+        .reason-container textarea {
+            width: 100%;
+            padding: 8px;
+            background-color: #000;
+            color: #fff;
+            border: 1px solid #444;
+            border-radius: 4px;
         }
     </style>
 </head>
 <body>
 
 <nav class="navbar">
-    <div class="logo">Anonymous Feedback System - Publish Form</div>
+    <div class="logo">Anonymous Feedback System</div>
 </nav>
 
-<section class="publish-container">
-    <div class="publish-box">
-        <h2>Publish Form</h2>
-        <p class="subtext" id="formInfo">Loading form information...</p>
+<section class="public-form-container">
+    <div class="public-form-header">
+        <h2 id="formTitle">Loading form...</h2>
+        <p class="subtext" id="formDomainLabel"></p>
+        <p class="subtext">
+            Your responses are completely anonymous. Please do not include your name, roll number, phone number, or any personal identifiers.
+        </p>
+    </div>
 
-        <div id="errorBox" class="subtext" style="color:#ff6b6b; display:none;"></div>
+    <div id="errorBox" class="subtext" style="color:#ff6b6b; display:none;"></div>
 
-        <div id="linkSection" style="display:none; margin-top:15px;">
-            <p class="subtext">
-                Click the button below to create a public link for this form. You can share this link or convert it into a QR code.
-            </p>
-            <button class="primary-btn" id="generateBtn" type="button">Generate Link</button>
+    <div id="formBody">
+        <!-- Sections and questions injected by JS -->
+    </div>
 
-            <div id="linkBox" class="publish-link-box" style="display:none;"></div>
-            <p id="helpText" class="subtext-small" style="display:none;">
-                This link opens the anonymous feedback page for this form.
-            </p>
+    <section class="overall-rating-section" style="margin-top:25px;">
+        <h3>Overall Rating</h3>
+        <p class="subtext">
+            Please rate your overall experience (1–5 stars).
+        </p>
+
+        <div class="stars-container" id="overallStars">
+            <span data-value="1">★</span>
+            <span data-value="2">★</span>
+            <span data-value="3">★</span>
+            <span data-value="4">★</span>
+            <span data-value="5">★</span>
         </div>
+        <p id="overallLabel" class="subtext">Rating: not set</p>
 
-        <div class="publish-actions">
-            <button class="back-btn" type="button" onclick="goBack()">← Back</button>
+        <div id="overallReasonContainer" class="reason-container" style="display:none; margin-top:10px;">
+            <label for="overallReason">Reason for low rating (required for 1–2 stars):</label>
+            <textarea id="overallReason" rows="3" placeholder="Please explain the main reason for your low rating..."></textarea>
         </div>
+    </section>
+
+    <div class="public-submit-row">
+        <button class="primary-btn" id="submitBtn">Submit Feedback</button>
     </div>
 </section>
 
 <script>
+const apiBase = "https://web-production-315e.up.railway.app";
+
 const urlParams = new URLSearchParams(window.location.search);
 const formId = urlParams.get("id");
 
-const apiBase = "https://web-production-315e.up.railway.app";
-
-const formInfo = document.getElementById("formInfo");
+const formTitleEl = document.getElementById("formTitle");
+const formDomainLabelEl = document.getElementById("formDomainLabel");
+const formBodyEl = document.getElementById("formBody");
 const errorBox = document.getElementById("errorBox");
-const linkSection = document.getElementById("linkSection");
-const generateBtn = document.getElementById("generateBtn");
-const linkBox = document.getElementById("linkBox");
-const helpText = document.getElementById("helpText");
+const starsContainer = document.getElementById("overallStars");
+const overallLabel = document.getElementById("overallLabel");
+const overallReasonContainer = document.getElementById("overallReasonContainer");
+const overallReasonInput = document.getElementById("overallReason");
+const submitBtn = document.getElementById("submitBtn");
 
-async function loadFormInfo() {
+let overallRating = 0;
+
+async function loadPublicForm() {
     if (!formId) {
-        formInfo.textContent = "Form id is missing in URL.";
+        formTitleEl.textContent = "Invalid form link";
+        errorBox.textContent = "Form id is missing in the URL.";
+        errorBox.style.display = "block";
         return;
     }
+
     try {
-        const res = await fetch(`${apiBase}/load-form-template?id=${formId}`);
+        const res = await fetch(`${apiBase}/get-public-form/${formId}`);
         const data = await res.json();
         if (!res.ok) {
-            formInfo.textContent = "Unable to load form information.";
-            errorBox.textContent = data.error || "Unknown error.";
+            formTitleEl.textContent = "Form not available";
+            errorBox.textContent = data.error || "This form cannot be accessed.";
             errorBox.style.display = "block";
             return;
         }
-        const name = data.name || "Untitled Form";
-        const status = data.status || "draft";
-        formInfo.textContent = `Form: ${name} (Status: ${status})`;
 
-        linkSection.style.display = "block";
+        formTitleEl.textContent = data.name || "Feedback Form";
+        formDomainLabelEl.textContent = "Domain: " + (data.domain || "custom");
+
+        renderQuestions(data.services || []);
+        setupOverallRating();
     } catch (e) {
         console.error(e);
-        formInfo.textContent = "Unable to connect to server.";
+        formTitleEl.textContent = "Failed to load form";
+        errorBox.textContent = "Unable to connect to the server. Please try again later.";
+        errorBox.style.display = "block";
     }
 }
 
-function generateLink() {
-    const origin = window.location.origin; // e.g. https://<user>.github.io
-    const path = window.location.pathname.split('/').slice(0, -1).join('/'); 
-    // e.g. /anonymous-feedback-frontend
+function renderQuestions(services) {
+    formBodyEl.innerHTML = "";
+    services.forEach((service, sIdx) => {
+        const section = document.createElement("section");
+        section.className = "public-section";
 
-    const base = origin + path; 
-    const link = `${base}/public-form.html?id=${formId}`;
+        const h3 = document.createElement("h3");
+        h3.textContent = service.name || `Section ${sIdx + 1}`;
+        section.appendChild(h3);
 
-    linkBox.textContent = link;
-    linkBox.style.display = "block";
-    helpText.style.display = "block";
+        const questions = service.questions || [];
+        questions.forEach((q, qIdx) => {
+            const qBox = document.createElement("div");
+            qBox.className = "public-question";
+
+            const label = document.createElement("label");
+            label.textContent = q.text || `Question ${qIdx + 1}`;
+            qBox.appendChild(label);
+
+            const type = q.type || "short";
+            const inputName = `q_${sIdx}_${qIdx}`;
+
+            if (type === "multiple" || type === "dropdown") {
+                const select = document.createElement("select");
+                select.name = inputName;
+                select.dataset.sectionName = service.name || "";
+                select.dataset.questionIndex = qIdx;
+                select.dataset.questionText = q.text || "";
+                select.dataset.answerType = "multiple";
+
+                const defaultOpt = document.createElement("option");
+                defaultOpt.value = "";
+                defaultOpt.textContent = "Select an option";
+                select.appendChild(defaultOpt);
+
+                (q.options || []).forEach(optText => {
+                    const opt = document.createElement("option");
+                    opt.value = optText;
+                    opt.textContent = optText;
+                    select.appendChild(opt);
+                });
+
+                qBox.appendChild(select);
+            } else if (type === "checkbox") {
+                const options = q.options || [];
+                options.forEach(optText => {
+                    const cbLabel = document.createElement("label");
+                    cbLabel.style.display = "block";
+
+                    const cb = document.createElement("input");
+                    cb.type = "checkbox";
+                    cb.name = inputName;
+                    cb.value = optText;
+                    cb.dataset.sectionName = service.name || "";
+                    cb.dataset.questionIndex = qIdx;
+                    cb.dataset.questionText = q.text || "";
+                    cb.dataset.answerType = "checkbox";
+
+                    cbLabel.appendChild(cb);
+                    cbLabel.appendChild(document.createTextNode(" " + optText));
+                    qBox.appendChild(cbLabel);
+                });
+            } else if (type === "rating") {
+                const ratingDiv = document.createElement("div");
+                ratingDiv.className = "rating-choices";
+                ratingDiv.dataset.sectionName = service.name || "";
+                ratingDiv.dataset.questionIndex = qIdx;
+                ratingDiv.dataset.questionText = q.text || "";
+                ratingDiv.dataset.answerType = "rating";
+
+                for (let v = 1; v <= 5; v++) {
+                    const span = document.createElement("span");
+                    span.textContent = "★";
+                    span.dataset.value = v;
+                    span.addEventListener("click", () => setQuestionRating(ratingDiv, v));
+                    ratingDiv.appendChild(span);
+                }
+
+                qBox.appendChild(ratingDiv);
+            } else {
+                const textarea = document.createElement("textarea");
+                textarea.name = inputName;
+                textarea.rows = (type === "long" ? 4 : 2);
+                textarea.dataset.sectionName = service.name || "";
+                textarea.dataset.questionIndex = qIdx;
+                textarea.dataset.questionText = q.text || "";
+                textarea.dataset.answerType = (type === "yesno" ? "yesno" : "short");
+
+                qBox.appendChild(textarea);
+            }
+
+            section.appendChild(qBox);
+        });
+
+        formBodyEl.appendChild(section);
+    });
 }
 
-
-function goBack() {
-    window.location.href = "drafts.html";
+function setQuestionRating(container, value) {
+    const spans = container.querySelectorAll("span");
+    spans.forEach(span => {
+        const v = parseInt(span.dataset.value, 10);
+        span.classList.toggle("active", v <= value);
+    });
+    container.dataset.selected = value;
 }
 
-generateBtn.addEventListener("click", generateLink);
+function setupOverallRating() {
+    starsContainer.querySelectorAll("span").forEach(star => {
+        star.addEventListener("click", () => {
+            const v = parseInt(star.dataset.value, 10);
+            overallRating = v;
 
-loadFormInfo();
+            starsContainer.querySelectorAll("span").forEach(s => {
+                const sv = parseInt(s.dataset.value, 10);
+                s.classList.toggle("active", sv <= v);
+            });
+
+            overallLabel.textContent = v ? `Rating: ${v} star${v > 1 ? "s" : ""}` : "Rating: not set";
+
+            if (v > 0 && v <= 2) {
+                overallReasonContainer.style.display = "block";
+            } else {
+                overallReasonContainer.style.display = "none";
+                overallReasonInput.value = "";
+            }
+        });
+    });
+}
+
+function collectAnswers() {
+    const answers = [];
+
+    const inputs = formBodyEl.querySelectorAll("select, textarea");
+    inputs.forEach(el => {
+        const sectionName = el.dataset.sectionName || "";
+        const questionIndex = parseInt(el.dataset.questionIndex || "0", 10);
+        const questionText = el.dataset.questionText || "";
+        const answerType = el.dataset.answerType || "short";
+        let answerValue = "";
+
+        if (el.tagName.toLowerCase() === "select") {
+            answerValue = el.value || "";
+        } else {
+            answerValue = (el.value || "").trim();
+        }
+
+        if (!answerValue) return;
+
+        answers.push({
+            section_name: sectionName,
+            question_index: questionIndex,
+            question_text: questionText,
+            answer_type: answerType,
+            answer_value: answerValue,
+            numeric_score: null
+        });
+    });
+
+    const checkboxGroups = {};
+    const checkboxes = formBodyEl.querySelectorAll("input[type='checkbox']");
+    checkboxes.forEach(cb => {
+        const key = cb.name;
+        if (!checkboxGroups[key]) {
+            checkboxGroups[key] = [];
+        }
+        checkboxGroups[key].push(cb);
+    });
+
+    Object.values(checkboxGroups).forEach(group => {
+        const anyChecked = group.filter(cb => cb.checked);
+        if (anyChecked.length === 0) return;
+
+        const sectionName = group[0].dataset.sectionName || "";
+        const questionIndex = parseInt(group[0].dataset.questionIndex || "0", 10);
+        const questionText = group[0].dataset.questionText || "";
+        const answerType = group[0].dataset.answerType || "checkbox";
+        const value = anyChecked.map(cb => cb.value).join(", ");
+
+        answers.push({
+            section_name: sectionName,
+            question_index: questionIndex,
+            question_text: questionText,
+            answer_type: answerType,
+            answer_value: value,
+            numeric_score: null
+        });
+    });
+
+    const ratingDivs = formBodyEl.querySelectorAll(".rating-choices");
+    ratingDivs.forEach(div => {
+        const selected = parseInt(div.dataset.selected || "0", 10);
+        if (!selected) return;
+
+        const sectionName = div.dataset.sectionName || "";
+        const questionIndex = parseInt(div.dataset.questionIndex || "0", 10);
+        const questionText = div.dataset.questionText || "";
+
+        answers.push({
+            section_name: sectionName,
+            question_index: questionIndex,
+            question_text: questionText,
+            answer_type: "rating",
+            answer_value: selected.toString(),
+            numeric_score: selected
+        });
+    });
+
+    return answers;
+}
+
+async function submitFeedback() {
+    if (!overallRating) {
+        alert("Please set an overall rating before submitting.");
+        return;
+    }
+
+    const reason = (overallReasonInput.value || "").trim();
+    if (overallRating <= 2 && !reason) {
+        alert("Please provide a reason for low rating (1–2 stars).");
+        return;
+    }
+
+    const answers = collectAnswers();
+    const payload = {
+        form_id: parseInt(formId, 10),
+        overall_rating: overallRating,
+        rating_reason: reason,
+        answers
+    };
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = "Submitting...";
+
+    try {
+        const res = await fetch(`${apiBase}/submit-feedback`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (!res.ok) {
+            alert(data.error || "Failed to submit feedback");
+            submitBtn.disabled = false;
+            submitBtn.textContent = "Submit Feedback";
+            return;
+        }
+
+        window.location.href = "thank-you.html";
+    } catch (e) {
+        console.error(e);
+        alert("Server not reachable");
+        submitBtn.disabled = false;
+        submitBtn.textContent = "Submit Feedback";
+    }
+}
+
+submitBtn.addEventListener("click", submitFeedback);
+
+loadPublicForm();
 </script>
 
 </body>
