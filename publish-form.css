@@ -1,85 +1,106 @@
-/* ===== PUBLISH FORM PAGE ===== */
+/* ===============================
+   PUBLISH FORM PAGE
+   =============================== */
 
 .publish-container {
     min-height: 100vh;
-    padding-top: 70px;              /* space for navbar */
-    padding: 90px 40px 40px 40px;   /* same pattern as drafts/school */
+    padding-top: 70px;
+    padding: 90px 40px 40px 40px;
     display: flex;
     justify-content: center;
-    align-items: center;            /* center box vertically */
+    align-items: flex-start;
     box-sizing: border-box;
 }
 
+/* Main box */
+
 .publish-box {
     width: 100%;
-    max-width: 600px;
+    max-width: 520px;
     background: rgba(0, 0, 0, 0.75);
     border-radius: 12px;
-    padding: 20px 25px;
+    padding: 22px 24px;
     box-shadow: 0 0 15px #00ff99;
 }
 
-/* Headings & text */
+/* Headings */
 
 .publish-box h2 {
     margin-bottom: 10px;
 }
 
+/* Text */
+
 .subtext {
     color: #e0fff3;
+    font-size: 0.9rem;
 }
 
 #formInfo {
-    margin-bottom: 8px;
+    margin-bottom: 10px;
+}
+
+/* Error message */
+
+#errorBox {
+    margin-top: 8px;
+    font-size: 0.85rem;
 }
 
 /* Link section */
 
 #linkSection {
-    margin-top: 15px;
+    margin-top: 18px;
 }
 
-/* Link display box with neon hover */
+/* Generate button alignment */
+
+#generateBtn {
+    margin-top: 10px;
+}
+
+/* Generated link box */
 
 .publish-link-box {
     margin-top: 15px;
-    padding: 10px;
-    background-color: rgba(0, 0, 0, 0.9);
+    padding: 10px 12px;
+    background: rgba(0, 0, 0, 0.9);
     border-radius: 8px;
     border: 1px solid rgba(0, 255, 153, 0.4);
     word-break: break-all;
-    font-size: 0.9rem;
+    font-size: 0.85rem;
     color: #e0fff3;
-    transition: box-shadow 0.25s ease, border-color 0.25s ease, transform 0.25s ease;
+    transition: transform 0.25s ease,
+                box-shadow 0.25s ease,
+                border-color 0.25s ease;
 }
 
 .publish-link-box:hover {
     border-color: #00ff99;
-    box-shadow: 0 0 22px rgba(0, 255, 153, 0.9);
+    box-shadow: 0 0 18px rgba(0, 255, 153, 0.8);
     transform: translateY(-2px);
 }
 
-.publish-label,
-.subtext-small {
-    color: #e0fff3;
-    font-size: 0.85rem;
+/* Help label */
+
+.publish-label {
     margin-top: 8px;
+    font-size: 0.8rem;
+    color: #e0fff3;
 }
 
-/* Actions row */
+/* Action buttons row */
 
 .publish-actions {
-    margin-top: 20px;
+    margin-top: 22px;
     display: flex;
     justify-content: flex-end;
-    gap: 10px;
 }
 
-/* Buttons: rely on existing theme, but ensure shape & hover */
+/* Buttons – reuse admin theme */
 
 .primary-btn,
-.secondary-btn,
-.back-btn {
+.secondary-btn {
     padding: 8px 14px;
     border-radius: 6px;
     border: none;
@@ -87,7 +108,7 @@
     cursor: pointer;
 }
 
-/* Generate Link button – neon green */
+/* Primary – neon green */
 
 .primary-btn {
     background: #00ff99;
@@ -98,28 +119,31 @@
     box-shadow: 0 0 10px #00ff99;
 }
 
-/* Back button – pink, same as secondary */
+/* Secondary – neon pink */
 
-.secondary-btn,
-.back-btn {
+.secondary-btn {
     background: #ff0066;
     color: #ffffff;
 }
 
-.secondary-btn:hover,
-.back-btn:hover {
+.secondary-btn:hover {
     box-shadow: 0 0 10px #ff0066;
 }
 
-/* Responsive */
+/* ===============================
+   RESPONSIVE
+   =============================== */
 
 @media (max-width: 768px) {
     .publish-container {
         padding: 90px 20px 20px 20px;
-        align-items: flex-start; /* slight top bias on small screens */
     }
 
     .publish-box {
         padding: 18px 20px;
+    }
+
+    .publish-actions {
+        justify-content: center;
     }
 }
