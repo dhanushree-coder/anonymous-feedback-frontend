@@ -115,14 +115,18 @@ async function loadFormInfo() {
 }
 
 function generateLink() {
-    // IMPORTANT: this must be the real frontend base URL, not file://
-    const frontendBase = window.location.origin;
-    const link = `${frontendBase}/public-form.html?id=${formId}`;
+    const origin = window.location.origin; // e.g. https://<user>.github.io
+    const path = window.location.pathname.split('/').slice(0, -1).join('/'); 
+    // e.g. /anonymous-feedback-frontend
+
+    const base = origin + path; 
+    const link = `${base}/public-form.html?id=${formId}`;
 
     linkBox.textContent = link;
     linkBox.style.display = "block";
     helpText.style.display = "block";
 }
+
 
 function goBack() {
     window.location.href = "drafts.html";
