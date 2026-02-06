@@ -3,37 +3,40 @@
 .publish-container {
     min-height: 100vh;
     padding-top: 70px;              /* space for navbar */
-    padding: 20px 40px 40px 40px;
+    padding: 90px 40px 40px 40px;   /* same pattern as drafts/school */
     display: flex;
     justify-content: center;
     align-items: center;            /* center box vertically */
+    box-sizing: border-box;
 }
 
 .publish-box {
     width: 100%;
-    max-width: 550px;
+    max-width: 600px;
     background: rgba(0, 0, 0, 0.75);
     border-radius: 12px;
-    padding: 22px 24px;
+    padding: 20px 25px;
     box-shadow: 0 0 15px #00ff99;
 }
+
+/* Headings & text */
 
 .publish-box h2 {
     margin-bottom: 10px;
 }
 
-.publish-subtext {
+.subtext {
     color: #e0fff3;
-    margin-bottom: 12px;
-    font-size: 0.95rem;
 }
 
 #formInfo {
     margin-bottom: 8px;
 }
 
+/* Link section */
+
 #linkSection {
-    margin-top: 10px;
+    margin-top: 15px;
 }
 
 /* Link display box with neon hover */
@@ -45,14 +48,15 @@
     border-radius: 8px;
     border: 1px solid rgba(0, 255, 153, 0.4);
     word-break: break-all;
-    font-size: 0.85rem;
+    font-size: 0.9rem;
     color: #e0fff3;
-    transition: box-shadow 0.25s ease, border-color 0.25s ease;
+    transition: box-shadow 0.25s ease, border-color 0.25s ease, transform 0.25s ease;
 }
 
 .publish-link-box:hover {
     border-color: #00ff99;
-    box-shadow: 0 0 18px rgba(0, 255, 153, 0.9);
+    box-shadow: 0 0 22px rgba(0, 255, 153, 0.9);
+    transform: translateY(-2px);
 }
 
 .publish-label,
@@ -62,14 +66,16 @@
     margin-top: 8px;
 }
 
-/* Buttons (reuse theme) */
+/* Actions row */
 
 .publish-actions {
-    margin-top: 18px;
+    margin-top: 20px;
     display: flex;
     justify-content: flex-end;
     gap: 10px;
 }
+
+/* Buttons: rely on existing theme, but ensure shape & hover */
 
 .primary-btn,
 .secondary-btn,
@@ -81,7 +87,7 @@
     cursor: pointer;
 }
 
-/* Generate Link button */
+/* Generate Link button – neon green */
 
 .primary-btn {
     background: #00ff99;
@@ -92,7 +98,7 @@
     box-shadow: 0 0 10px #00ff99;
 }
 
-/* Back button */
+/* Back button – pink, same as secondary */
 
 .secondary-btn,
 .back-btn {
@@ -110,10 +116,10 @@
 @media (max-width: 768px) {
     .publish-container {
         padding: 90px 20px 20px 20px;
-        align-items: flex-start;
+        align-items: flex-start; /* slight top bias on small screens */
     }
 
     .publish-box {
-        padding: 20px;
+        padding: 18px 20px;
     }
 }
