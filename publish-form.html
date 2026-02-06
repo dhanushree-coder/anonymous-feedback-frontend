@@ -3,66 +3,137 @@
 <head>
     <meta charset="UTF-8">
     <title>Publish Form</title>
+    <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="publish-form.css">
-    <link rel="stylesheet" href="school-templates.css">
 </head>
-
 <body>
 
-<div class="publish-container">
+<nav class="navbar">
+    <div class="logo">Anonymous Feedback System - Admin</div>
+</nav>
+
+<section class="publish-container">
     <div class="publish-box">
-
         <h2>Publish Form</h2>
-        <p class="subtext">Generate a public link to share this form</p>
+        <p class="subtext" id="formInfo">Loading form information...</p>
 
-        <p id="formInfo" class="subtext"></p>
-        <p id="errorBox" class="subtext"></p>
+        <div id="errorBox" class="subtext" style="color:#ff6b6b; display:none;"></div>
 
         <div id="linkSection" style="display:none;">
+            <p class="subtext">
+                Click the button below to generate a public link for this form.
+            </p>
+            <button class="primary-btn" id="generateBtn" type="button">Generate Link</button>
 
-            <!-- LINK + COPY ICON -->
-            <div class="publish-link-box">
-                <span id="generatedLink"></span>
-
-                <span class="copy-icon" title="Copy link" onclick="copyFormLink()">
-                    📋
-                </span>
+            <!-- Link + copy row -->
+            <div id="linkRow" style="display:none; margin-top:15px;">
+                <div id="linkBox" class="publish-link-box"></div>
+                <button class="secondary-btn" id="copyBtn" type="button" style="margin-top:10px;">
+                    Copy Link
+                </button>
+                <p id="copyStatus" class="publish-label" style="display:none;"></p>
             </div>
 
-            <p class="publish-label">Click the icon to copy the form link</p>
+            <p id="helpText" class="publish-label" style="display:none;">
+                Share this link or convert it to a QR code for students/employees/citizens.
+            </p>
         </div>
-
-        <button id="generateBtn" class="primary-btn" onclick="generateLink()">
-            Generate Link
-        </button>
 
         <div class="publish-actions">
-            <button class="secondary-btn" onclick="window.history.back()">Back</button>
+            <button class="secondary-btn" type="button" onclick="goBack()">Back</button>
         </div>
-
     </div>
-</div>
+</section>
 
 <script>
+const urlParams = new URLSearchParams(window.location.search);
+const formId = urlParams.get("id");
+
+const apiBase = "https://web-production-315e.up.railway.app";
+
+const formInfo = document.getElementById("formInfo");
+const errorBox = document.getElementById("errorBox");
+const linkSection = document.getElementById("linkSection");
+const generateBtn = document.getElementById("generateBtn");
+const linkRow = document.getElementById("linkRow");
+const linkBox = document.getElementById("linkBox");
+const helpText = document.getElementById("helpText");
+const copyBtn = document.getElementById("copyBtn");
+const copyStatus = document.getElementById("copyStatus");
+
+async function loadFormInfo() {
+    if (!formId) {
+        formInfo.textContent = "Form id is missing in URL.";
+        return;
+    }
+    try {
+        const res = await fetch(`${apiBase}/load-form-template?id=${formId}`);
+        const data = await res.json();
+        if (!res.ok) {
+            formInfo.textContent = "Unable to load form information.";
+            errorBox.textContent = data.error || "Unknown error.";
+            errorBox.style.display = "block";
+            return;
+        }
+        const name = data.name || "Untitled Form";
+        const status = data.status || "draft";
+        formInfo.textContent = `Form: ${name} (Status: ${status})`;
+
+        linkSection.style.display = "block";
+    } catch (e) {
+        console.error(e);
+        formInfo.textContent = "Unable to connect to server.";
+    }
+}
+
 function generateLink() {
-    const linkSection = document.getElementById("linkSection");
-    const linkText = document.getElementById("generatedLink");
+    const origin = window.location.origin;
+    const path = window.location.pathname.split('/').slice(0, -1).join('/');
+    const base = origin + path;
+    const link = `${base}/public-form.html?id=${formId}`;
 
-    const generatedURL = "https://yourdomain.com/form/view?id=12345"; // sample
-
-    linkText.textContent = generatedURL;
-    linkSection.style.display = "block";
+    linkBox.textContent = link;
+    linkRow.style.display = "block";
+    helpText.style.display = "block";
+    copyStatus.style.display = "none";
+    copyStatus.textContent = "";
 }
 
-function copyFormLink() {
-    const text = document.getElementById("generatedLink").textContent;
+async function copyLink() {
+    const text = linkBox.textContent.trim();
+    if (!text) return;
 
-    navigator.clipboard.writeText(text).then(() => {
-        alert("Link copied successfully!");
-    }).catch(() => {
-        alert("Failed to copy link");
-    });
+    try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            await navigator.clipboard.writeText(text);
+        } else {
+            // Fallback for older browsers
+            const textarea = document.createElement("textarea");
+            textarea.value = text;
+            textarea.style.position = "fixed";
+            textarea.style.opacity = "0";
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand("copy");
+            document.body.removeChild(textarea);
+        }
+        copyStatus.textContent = "Link copied to clipboard.";
+        copyStatus.style.display = "block";
+    } catch (err) {
+        console.error("Copy failed:", err);
+        copyStatus.textContent = "Unable to copy. Please copy it manually.";
+        copyStatus.style.display = "block";
+    }
 }
+
+function goBack() {
+    window.location.href = "drafts.html";
+}
+
+generateBtn.addEventListener("click", generateLink);
+copyBtn.addEventListener("click", copyLink);
+
+loadFormInfo();
 </script>
 
 </body>
