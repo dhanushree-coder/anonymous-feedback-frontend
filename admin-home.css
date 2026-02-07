@@ -363,11 +363,11 @@
     position: relative;
 }
 
-/* Each card behaves like a slide */
+/* Each card is one full "slide" */
 .analytics-card {
-    min-width: 340px;
-    max-width: 380px;
-    flex: 0 0 auto;
+    min-width: 100%;
+    max-width: 100%;
+    flex: 0 0 100%;                 /* always occupy full visible width */
     background: rgba(0, 0, 0, 0.85);
     border-radius: 12px;
     padding: 18px;

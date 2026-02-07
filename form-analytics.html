@@ -382,31 +382,46 @@ saveEstimateBtn.addEventListener("click", async () => {
 loadSummary();
 loadPatterns();
 
-/* ===== Carousel logic for analytics cards ===== */
+/* ===== Carousel logic for analytics cards (one card at a time) ===== */
 const carouselEl = document.getElementById("analyticsCarousel");
 const prevBtn = document.getElementById("analyticsPrevBtn");
 const nextBtn = document.getElementById("analyticsNextBtn");
+const slides = carouselEl.querySelectorAll(".analytics-card");
 
+let currentIndex = 0;
 let autoSlideTimer = null;
 
-/* Scroll by full visible width for a clear slide effect */
-function getSlideWidth() {
-    return carouselEl.clientWidth;
+function showSlide(index) {
+    if (slides.length === 0) return;
+
+    if (index < 0) index = slides.length - 1;
+    if (index >= slides.length) index = 0;
+
+    currentIndex = index;
+
+    const offset = carouselEl.clientWidth * currentIndex;
+    carouselEl.scrollTo({
+        left: offset,
+        behavior: "smooth"
+    });
 }
 
-function slideCarousel(direction = 1) {
-    const width = getSlideWidth();
-    carouselEl.scrollLeft += direction * width;
+function nextSlide() {
+    showSlide(currentIndex + 1);
+}
+
+function prevSlide() {
+    showSlide(currentIndex - 1);
 }
 
 /* Manual navigation */
 prevBtn.addEventListener("click", () => {
-    slideCarousel(-1);
+    prevSlide();
     resetAutoSlide();
 });
 
 nextBtn.addEventListener("click", () => {
-    slideCarousel(1);
+    nextSlide();
     resetAutoSlide();
 });
 
@@ -414,7 +429,7 @@ nextBtn.addEventListener("click", () => {
 function startAutoSlide() {
     stopAutoSlide();
     autoSlideTimer = setInterval(() => {
-        slideCarousel(1);
+        nextSlide();
     }, 5000);
 }
 
@@ -429,12 +444,14 @@ function resetAutoSlide() {
     startAutoSlide();
 }
 
-/* Start auto slide */
+/* Start auto slide and show first slide */
+showSlide(0);
 startAutoSlide();
 
 /* Pause on hover over carousel */
 carouselEl.addEventListener("mouseenter", stopAutoSlide);
 carouselEl.addEventListener("mouseleave", startAutoSlide);
+
 
 /* Bars already re‑animate on each reload via createBarRow + CSS transitions */
 </script>
