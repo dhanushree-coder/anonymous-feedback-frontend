@@ -444,14 +444,13 @@ function resetAutoSlide() {
     startAutoSlide();
 }
 
-/* Start auto slide and show first slide */
+/* Start and show first slide */
 showSlide(0);
 startAutoSlide();
 
 /* Pause on hover over carousel */
 carouselEl.addEventListener("mouseenter", stopAutoSlide);
 carouselEl.addEventListener("mouseleave", startAutoSlide);
-
 
 /* Bars already re‑animate on each reload via createBarRow + CSS transitions */
 </script>
