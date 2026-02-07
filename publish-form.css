@@ -147,3 +147,42 @@
         justify-content: center;
     }
 }
+
+
+
+/* Row that holds link + copy button */
+#linkRow {
+    margin-top: 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+/* Copy icon button under the link */
+.copy-icon-btn {
+    align-self: flex-end;
+    padding: 6px 12px;
+    border-radius: 6px;
+    border: none;
+    font-weight: bold;
+    cursor: pointer;
+    background: #ff0066;
+    color: #ffffff;
+    font-size: 0.9rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: box-shadow 0.25s ease, transform 0.2s ease;
+}
+
+.copy-icon-btn:hover {
+    box-shadow: 0 0 10px #ff0066;
+    transform: translateY(-1px);
+}
+
+/* Copy status text */
+#copyStatus {
+    color: #e0fff3;
+    font-size: 0.85rem;
+    margin-top: 2px;
+}

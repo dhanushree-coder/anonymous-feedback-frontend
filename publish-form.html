@@ -5,7 +5,6 @@
     <title>Publish Form</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="publish-form.css">
-    
 </head>
 <body>
 
@@ -21,10 +20,24 @@
         <div id="errorBox" class="subtext" style="color:#ff6b6b; display:none;"></div>
 
         <div id="linkSection" style="display:none;">
-            <p class="subtext">Click the button below to generate a public link for this form.</p>
+            <p class="subtext">
+                Click the button below to generate a public link for this form.
+            </p>
             <button class="primary-btn" id="generateBtn" type="button">Generate Link</button>
 
-            <div id="linkBox" class="publish-link-box" style="display:none;"></div>
+            <!-- Link + copy area -->
+            <div id="linkRow" style="display:none;">
+                <div id="linkBox" class="publish-link-box"></div>
+
+                <!-- Copy icon button under the link -->
+                <button id="copyBtn" class="copy-icon-btn" type="button" aria-label="Copy link">
+                    <!-- Simple copy icon using characters; you can replace with SVG if needed -->
+                    📋 Copy Link
+                </button>
+
+                <p id="copyStatus" class="publish-label" style="display:none;"></p>
+            </div>
+
             <p id="helpText" class="publish-label" style="display:none;">
                 Share this link or convert it to a QR code for students/employees/citizens.
             </p>
@@ -46,8 +59,11 @@ const formInfo = document.getElementById("formInfo");
 const errorBox = document.getElementById("errorBox");
 const linkSection = document.getElementById("linkSection");
 const generateBtn = document.getElementById("generateBtn");
+const linkRow = document.getElementById("linkRow");
 const linkBox = document.getElementById("linkBox");
 const helpText = document.getElementById("helpText");
+const copyBtn = document.getElementById("copyBtn");
+const copyStatus = document.getElementById("copyStatus");
 
 async function loadFormInfo() {
     if (!formId) {
@@ -75,17 +91,42 @@ async function loadFormInfo() {
 }
 
 function generateLink() {
-    // Build base path including repo folder on GitHub Pages
-    const origin = window.location.origin; // e.g. https://dhanushree-coder.github.io
-    const path = window.location.pathname.split('/').slice(0, -1).join('/'); 
-    // e.g. /anonymous-feedback-frontend
-
+    const origin = window.location.origin;
+    const path = window.location.pathname.split('/').slice(0, -1).join('/');
     const base = origin + path;
     const link = `${base}/public-form.html?id=${formId}`;
 
     linkBox.textContent = link;
-    linkBox.style.display = "block";
+    linkRow.style.display = "block";
     helpText.style.display = "block";
+    copyStatus.style.display = "none";
+    copyStatus.textContent = "";
+}
+
+async function copyLink() {
+    const text = linkBox.textContent.trim();
+    if (!text) return;
+
+    try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            await navigator.clipboard.writeText(text);
+        } else {
+            const textarea = document.createElement("textarea");
+            textarea.value = text;
+            textarea.style.position = "fixed";
+            textarea.style.opacity = "0";
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand("copy");
+            document.body.removeChild(textarea);
+        }
+        copyStatus.textContent = "Link copied to clipboard.";
+        copyStatus.style.display = "block";
+    } catch (err) {
+        console.error("Copy failed:", err);
+        copyStatus.textContent = "Unable to copy. Please copy manually.";
+        copyStatus.style.display = "block";
+    }
 }
 
 function goBack() {
@@ -93,6 +134,7 @@ function goBack() {
 }
 
 generateBtn.addEventListener("click", generateLink);
+copyBtn.addEventListener("click", copyLink);
 
 loadFormInfo();
 </script>
