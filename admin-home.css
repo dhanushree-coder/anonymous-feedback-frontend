@@ -352,7 +352,6 @@
     }
 }
 
-
 /* ===== ENHANCED ANALYTICS CARDS & CAROUSEL ===== */
 
 /* Wrap analytics-card layout inside a horizontal carousel */
@@ -366,8 +365,8 @@
 
 /* Each card behaves like a slide */
 .analytics-card {
-    min-width: 280px;
-    max-width: 360px;
+    min-width: 340px;
+    max-width: 380px;
     flex: 0 0 auto;
     background: rgba(0, 0, 0, 0.85);
     border-radius: 12px;

@@ -20,6 +20,7 @@
             margin-bottom: 5px;
         }
 
+        /* base grid, later overridden by admin-home.css for carousel */
         .analytics-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
@@ -381,7 +382,6 @@ saveEstimateBtn.addEventListener("click", async () => {
 loadSummary();
 loadPatterns();
 
-
 /* ===== Carousel logic for analytics cards ===== */
 const carouselEl = document.getElementById("analyticsCarousel");
 const prevBtn = document.getElementById("analyticsPrevBtn");
@@ -389,9 +389,9 @@ const nextBtn = document.getElementById("analyticsNextBtn");
 
 let autoSlideTimer = null;
 
+/* Scroll by full visible width for a clear slide effect */
 function getSlideWidth() {
-    const firstCard = carouselEl.querySelector(".analytics-card");
-    return firstCard ? firstCard.offsetWidth + 20 : 300; // card width + gap
+    return carouselEl.clientWidth;
 }
 
 function slideCarousel(direction = 1) {
@@ -410,7 +410,7 @@ nextBtn.addEventListener("click", () => {
     resetAutoSlide();
 });
 
-/* Auto slide every 5 seconds like Netflix-style carousel */
+/* Auto slide every 5 seconds */
 function startAutoSlide() {
     stopAutoSlide();
     autoSlideTimer = setInterval(() => {
@@ -429,20 +429,14 @@ function resetAutoSlide() {
     startAutoSlide();
 }
 
-/* Start auto slide after content is loaded */
+/* Start auto slide */
 startAutoSlide();
 
-/* Pause on hover over carousel to avoid fighting user scroll */
+/* Pause on hover over carousel */
 carouselEl.addEventListener("mouseenter", stopAutoSlide);
 carouselEl.addEventListener("mouseleave", startAutoSlide);
 
-/* ===== Smooth re-animation of bars on data refresh ===== */
-/* You already call createBarRow(), which sets width via requestAnimationFrame.
-   To make bars re-animate on each summary reload, we clear them and recreate.
-   This is already happening in loadSummary() and loadPatterns(), so the CSS
-   transition on .bar-fill will automatically animate from 0 to target width. */
-
-
+/* Bars already re‑animate on each reload via createBarRow + CSS transitions */
 </script>
 
 </body>
