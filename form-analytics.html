@@ -166,17 +166,17 @@
         <p class="subtext" id="formMeta"></p>
     </div>
 
-    <div class="analytics-grid">
+    <!-- Carousel arrows -->
+    <button type="button" class="analytics-nav-arrow left" id="analyticsPrevBtn">&#8249;</button>
+    <button type="button" class="analytics-nav-arrow right" id="analyticsNextBtn">&#8250;</button>
+
+    <div class="analytics-grid" id="analyticsCarousel">
         <!-- Positive / Negative overview -->
         <div class="analytics-card">
             <h3>Positive vs Negative Feedback</h3>
             <p class="subtext">Overall distribution of feedback sentiment.</p>
-            <div class="bar-chart" id="sentimentBars">
-                <!-- bars injected -->
-            </div>
-            <ul class="list-small" id="negativeReasonsList">
-                <!-- negative reasons -->
-            </ul>
+            <div class="bar-chart" id="sentimentBars"></div>
+            <ul class="list-small" id="negativeReasonsList"></ul>
         </div>
 
         <!-- IP failures / spam -->
@@ -196,21 +196,15 @@
                 <button id="saveEstimateBtn" type="button">Save Estimate</button>
             </div>
             <p id="estimateInfo" class="estimate-note"></p>
-            <div class="bar-chart" id="estimateBars" style="margin-top:10px;">
-                <!-- bars injected -->
-            </div>
+            <div class="bar-chart" id="estimateBars" style="margin-top:10px;"></div>
         </div>
 
         <!-- Key patterns & improvement areas -->
         <div class="analytics-card">
             <h3>Key Patterns & Improvement Areas</h3>
             <p class="subtext">Words and sections that need attention.</p>
-            <ul class="list-small" id="keywordsList">
-                <!-- keywords -->
-            </ul>
-            <div class="bar-chart" id="sectionBars" style="margin-top:10px;">
-                <!-- section bars injected -->
-            </div>
+            <ul class="list-small" id="keywordsList"></ul>
+            <div class="bar-chart" id="sectionBars" style="margin-top:10px;"></div>
         </div>
     </div>
 
@@ -386,6 +380,69 @@ saveEstimateBtn.addEventListener("click", async () => {
 
 loadSummary();
 loadPatterns();
+
+
+/* ===== Carousel logic for analytics cards ===== */
+const carouselEl = document.getElementById("analyticsCarousel");
+const prevBtn = document.getElementById("analyticsPrevBtn");
+const nextBtn = document.getElementById("analyticsNextBtn");
+
+let autoSlideTimer = null;
+
+function getSlideWidth() {
+    const firstCard = carouselEl.querySelector(".analytics-card");
+    return firstCard ? firstCard.offsetWidth + 20 : 300; // card width + gap
+}
+
+function slideCarousel(direction = 1) {
+    const width = getSlideWidth();
+    carouselEl.scrollLeft += direction * width;
+}
+
+/* Manual navigation */
+prevBtn.addEventListener("click", () => {
+    slideCarousel(-1);
+    resetAutoSlide();
+});
+
+nextBtn.addEventListener("click", () => {
+    slideCarousel(1);
+    resetAutoSlide();
+});
+
+/* Auto slide every 5 seconds like Netflix-style carousel */
+function startAutoSlide() {
+    stopAutoSlide();
+    autoSlideTimer = setInterval(() => {
+        slideCarousel(1);
+    }, 5000);
+}
+
+function stopAutoSlide() {
+    if (autoSlideTimer) {
+        clearInterval(autoSlideTimer);
+        autoSlideTimer = null;
+    }
+}
+
+function resetAutoSlide() {
+    startAutoSlide();
+}
+
+/* Start auto slide after content is loaded */
+startAutoSlide();
+
+/* Pause on hover over carousel to avoid fighting user scroll */
+carouselEl.addEventListener("mouseenter", stopAutoSlide);
+carouselEl.addEventListener("mouseleave", startAutoSlide);
+
+/* ===== Smooth re-animation of bars on data refresh ===== */
+/* You already call createBarRow(), which sets width via requestAnimationFrame.
+   To make bars re-animate on each summary reload, we clear them and recreate.
+   This is already happening in loadSummary() and loadPatterns(), so the CSS
+   transition on .bar-fill will automatically animate from 0 to target width. */
+
+
 </script>
 
 </body>

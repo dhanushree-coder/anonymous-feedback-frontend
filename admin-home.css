@@ -351,3 +351,158 @@
         text-align: center;
     }
 }
+
+
+/* ===== ENHANCED ANALYTICS CARDS & CAROUSEL ===== */
+
+/* Wrap analytics-card layout inside a horizontal carousel */
+.analytics-grid {
+    display: flex;
+    gap: 20px;
+    overflow-x: hidden;
+    scroll-behavior: smooth;
+    position: relative;
+}
+
+/* Each card behaves like a slide */
+.analytics-card {
+    min-width: 280px;
+    max-width: 360px;
+    flex: 0 0 auto;
+    background: rgba(0, 0, 0, 0.85);
+    border-radius: 12px;
+    padding: 18px;
+    box-shadow: 0 0 15px rgba(0, 255, 153, 0.4);
+    position: relative;
+    transition: box-shadow 0.4s ease, transform 0.4s ease, border-color 0.4s ease;
+    border: 1px solid rgba(0, 255, 153, 0.4);
+}
+
+/* Neon glow on hover, no layout shift */
+.analytics-card:hover {
+    box-shadow: 0 0 25px rgba(0, 255, 153, 0.9);
+    border-color: #00ff99;
+    transform: translateY(-3px);
+}
+
+/* Inner spacing consistency */
+.analytics-card h3 {
+    margin-bottom: 6px;
+}
+
+.analytics-card .subtext {
+    margin-bottom: 8px;
+}
+
+/* Bar chart layout (used in multiple cards) */
+.bar-chart {
+    margin-top: 8px;
+}
+
+/* Bar animation smoothing is controlled via .bar-fill */
+.bar-track {
+    background: #050505;
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.bar-fill {
+    height: 100%;
+    width: 0;
+    border-radius: 6px;
+    background: linear-gradient(90deg, #00ff99, #00b8ff);
+    transition: width 0.9s cubic-bezier(0.22, 0.61, 0.36, 1); /* smooth stock-like easing */
+}
+
+.bar-fill.negative {
+    background: linear-gradient(90deg, #ff0066, #ff9900);
+}
+
+/* Scrollable lists with neon custom scrollbar */
+.list-small {
+    margin-top: 8px;
+    max-height: 180px;
+    overflow-y: auto;
+    padding-right: 8px; /* inner spacing so text not touching scrollbar */
+}
+
+/* WebKit scrollbars (Chrome, Edge, Safari) */
+.list-small::-webkit-scrollbar {
+    width: 6px;
+}
+
+.list-small::-webkit-scrollbar-track {
+    background: #050505;
+    border-radius: 4px;
+}
+
+.list-small::-webkit-scrollbar-thumb {
+    background: linear-gradient(#00ff99, #00b8ff);
+    border-radius: 4px;
+    transition: background 0.25s ease;
+}
+
+.list-small::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(#00ffcc, #00ffff);
+}
+
+/* Firefox scrollbar */
+.list-small {
+    scrollbar-width: thin;
+    scrollbar-color: #00ff99 #050505;
+}
+
+/* Carousel navigation arrows */
+.analytics-container {
+    position: relative;
+}
+
+.analytics-nav-arrow {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    border: 1px solid #00ff99;
+    background: rgba(0, 0, 0, 0.85);
+    color: #00ff99;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 0 10px rgba(0, 255, 153, 0.4);
+    transition: box-shadow 0.25s ease, background 0.25s ease, transform 0.25s ease;
+    z-index: 5;
+}
+
+.analytics-nav-arrow:hover {
+    box-shadow: 0 0 18px rgba(0, 255, 153, 0.9);
+    background: rgba(0, 0, 0, 0.95);
+    transform: translateY(-50%) scale(1.05);
+}
+
+.analytics-nav-arrow.left {
+    left: 8px;
+}
+
+.analytics-nav-arrow.right {
+    right: 8px;
+}
+
+/* Responsive behavior: stack cards on small screens, disable arrows */
+@media (max-width: 768px) {
+    .analytics-grid {
+        display: block;
+        overflow-x: visible;
+    }
+
+    .analytics-card {
+        max-width: 100%;
+        margin-bottom: 16px;
+    }
+
+    .analytics-nav-arrow {
+        display: none;
+    }
+}
