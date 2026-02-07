@@ -2,9 +2,13 @@
 
 .public-form-page {
     min-height: 100vh;
-    padding-top: 70px;                 /* space for navbar */
-    padding: 90px 40px 40px 40px;
     box-sizing: border-box;
+
+    /* Space for fixed navbar + top breathing room */
+    padding-top: 90px;              /* was 70 + extra gap */
+    padding-right: 40px;
+    padding-bottom: 40px;
+    padding-left: 40px;
 }
 
 /* Main form card */
@@ -139,7 +143,10 @@
 
 @media (max-width: 768px) {
     .public-form-page {
-        padding: 90px 20px 20px 20px;
+        padding-top: 90px;          /* keep gap from navbar on mobile */
+        padding-right: 20px;
+        padding-bottom: 20px;
+        padding-left: 20px;
     }
 
     .public-form-container {
