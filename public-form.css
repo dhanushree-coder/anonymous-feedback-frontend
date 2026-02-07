@@ -1,0 +1,148 @@
+/* ===== PUBLIC ANONYMOUS FEEDBACK FORM ===== */
+
+.public-form-page {
+    min-height: 100vh;
+    padding-top: 70px;                 /* space for navbar */
+    padding: 90px 40px 40px 40px;
+    box-sizing: border-box;
+}
+
+/* Main form card */
+
+.public-form-container {
+    max-width: 900px;
+    margin: 0 auto;
+    background-color: #111;
+    padding: 20px 25px;
+    border-radius: 12px;
+    box-shadow: 0 0 15px #00ff99;
+}
+
+/* Header */
+
+.public-form-header h2 {
+    margin-bottom: 10px;
+}
+
+.subtext {
+    color: #e0fff3;
+}
+
+/* Sections & questions */
+
+.public-section {
+    margin-top: 25px;
+    border-top: 1px solid #333;
+    padding-top: 15px;
+}
+
+.public-question {
+    margin-bottom: 15px;
+}
+
+.public-question label {
+    display: block;
+    margin-bottom: 5px;
+}
+
+.public-question .subtext {
+    margin-bottom: 5px;
+}
+
+/* Inputs */
+
+.public-question input[type="text"],
+.public-question textarea,
+.public-question select {
+    width: 100%;
+    padding: 8px;
+    background-color: #000;
+    color: #fff;
+    border: 1px solid #444;
+    border-radius: 4px;
+    box-sizing: border-box;
+}
+
+.public-question input[type="text"]:focus,
+.public-question textarea:focus,
+.public-question select:focus {
+    outline: none;
+    border-color: #00ff99;
+    box-shadow: 0 0 8px rgba(0, 255, 153, 0.6);
+}
+
+/* Per-question rating stars */
+
+.rating-choices span {
+    cursor: pointer;
+    font-size: 20px;
+    margin-right: 5px;
+}
+
+.rating-choices span.active {
+    color: #ffd700;
+}
+
+/* Overall rating block */
+
+.overall-rating-section {
+    margin-top: 25px;
+}
+
+.stars-container span {
+    cursor: pointer;
+    font-size: 24px;
+    margin-right: 5px;
+}
+
+.stars-container span.active {
+    color: #ffd700;
+}
+
+/* Low rating reason */
+
+.reason-container textarea {
+    width: 100%;
+    padding: 8px;
+    background-color: #000;
+    color: #fff;
+    border: 1px solid #444;
+    border-radius: 4px;
+    box-sizing: border-box;
+}
+
+/* Submit row & button */
+
+.public-submit-row {
+    margin-top: 25px;
+    text-align: right;
+}
+
+/* Use existing primary button theme, enforce sizing & glow */
+
+.public-submit-row .primary-btn {
+    padding: 8px 16px;
+    border-radius: 6px;
+    border: none;
+    font-weight: bold;
+    cursor: pointer;
+    background: #00ff99;
+    color: #000000;
+    transition: box-shadow 0.25s ease;
+}
+
+.public-submit-row .primary-btn:hover {
+    box-shadow: 0 0 10px #00ff99;
+}
+
+/* Responsive */
+
+@media (max-width: 768px) {
+    .public-form-page {
+        padding: 90px 20px 20px 20px;
+    }
+
+    .public-form-container {
+        padding: 18px 18px;
+    }
+}
