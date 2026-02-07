@@ -56,9 +56,9 @@
                         <tr>
                             <th>ID</th>
                             <th>Date</th>
-                            <th>Category</th>
+                            <th>Form</th>
                             <th>Rating</th>
-                            <th>Status</th>
+                            <th>Sentiment</th>
                         </tr>
                     </thead>
                     <tbody id="recentFeedbacksBody">
@@ -76,8 +76,7 @@
             <div class="section-box">
                 <div class="filter-row">
                     <input type="date" id="filterDate">
-                    <input type="text" id="filterUser" placeholder="User / ID">
-                    <input type="text" id="filterCategory" placeholder="Category">
+                    <input type="text" id="filterForm" placeholder="Form name / ID">
                     <select id="filterRating">
                         <option value="">All Ratings</option>
                         <option value="5">5 Stars</option>
@@ -86,18 +85,18 @@
                         <option value="2">2 Stars</option>
                         <option value="1">1 Star</option>
                     </select>
-                    <button>Filter</button>
+                    <button id="applyFeedbackFilterBtn">Filter</button>
                 </div>
 
                 <table class="dash-table">
                     <thead>
                         <tr>
-                            <th>ID</th>
+                            <th>Response ID</th>
                             <th>Date</th>
-                            <th>Category</th>
+                            <th>Form</th>
                             <th>Rating</th>
-                            <th>Details</th>
-                            <th>Mark</th>
+                            <th>Sentiment</th>
+                            <th>Analytics</th>
                         </tr>
                     </thead>
                     <tbody id="allFeedbacksBody">
@@ -117,7 +116,7 @@
                 <table class="dash-table">
                     <thead>
                         <tr>
-                            <th>User ID</th>
+                            <th>IP Hash</th>
                             <th>Total Submissions</th>
                             <th>Last Submission</th>
                         </tr>
@@ -136,7 +135,6 @@
             <h2>Form Management</h2>
             <div class="section-box">
                 <div class="forms-header-row">
-                    <!-- UPDATED: added onclick -->
                     <button type="button" onclick="openCreateForm()">Create New Form</button>
                 </div>
                 <table class="dash-table">
@@ -215,12 +213,10 @@
             <h2>Reports / Analytics</h2>
             <div class="section-box">
                 <p class="subtext">
-                    Graphs and statistics about feedback trends will be shown here.
+                    Detailed analytics are available per form from the Feedbacks tab.
                 </p>
                 <ul class="simple-list">
-                    <li>Ratings over time.</li>
-                    <li>Category-wise feedback distribution.</li>
-                    <li>Export data (CSV/PDF).</li>
+                    <li>Open a specific form’s analytics via “View Reports / Analytics” in the Feedbacks tab.</li>
                 </ul>
             </div>
         </section>
@@ -278,6 +274,8 @@
 </div>
 
 <script>
+const API_BASE = "https://web-production-315e.up.railway.app";
+
 const items = document.querySelectorAll('.sidebar-item');
 const sections = document.querySelectorAll('.dash-section');
 
@@ -317,10 +315,145 @@ function openDrafts() {
     window.location.href = "drafts.html";
 }
 
-/* NEW: open Create New Form builder page */
 function openCreateForm() {
     window.location.href = "create-form.html";
 }
+
+/* Load forms summary for Forms tab */
+async function loadFormsList() {
+    try {
+        const res = await fetch(`${API_BASE}/admin/forms-summary`);
+        const data = await res.json();
+        const tbody = document.getElementById("formsBody");
+        tbody.innerHTML = "";
+
+        if (!res.ok || !Array.isArray(data) || data.length === 0) {
+            const tr = document.createElement("tr");
+            const td = document.createElement("td");
+            td.colSpan = 5;
+            td.textContent = "No forms yet.";
+            tr.appendChild(td);
+            tbody.appendChild(tr);
+            return;
+        }
+
+        data.forEach(f => {
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+                <td>${f.id}</td>
+                <td>${f.name || "Untitled"}</td>
+                <td>${f.status}</td>
+                <td>${f.submissions || 0}</td>
+                <td>
+                    <button class="open-btn" type="button" onclick="openFormAnalytics(${f.id})">
+                        View Reports / Analytics
+                    </button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+    } catch (e) {
+        console.error("loadFormsList error:", e);
+    }
+}
+
+/* Open analytics page for a form */
+function openFormAnalytics(formId) {
+    window.location.href = `form-analytics.html?form_id=${formId}`;
+}
+
+/* Load recent submissions for home */
+async function loadRecentFeedbacks() {
+    try {
+        const res = await fetch(`${API_BASE}/admin/recent-feedbacks`);
+        const data = await res.json();
+        const tbody = document.getElementById("recentFeedbacksBody");
+        tbody.innerHTML = "";
+
+        if (!res.ok || !Array.isArray(data) || data.length === 0) {
+            const tr = document.createElement("tr");
+            const td = document.createElement("td");
+            td.colSpan = 5;
+            td.textContent = "No data yet.";
+            tr.appendChild(td);
+            tbody.appendChild(tr);
+            return;
+        }
+
+        data.forEach(r => {
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+                <td>${r.id}</td>
+                <td>${r.submitted_at}</td>
+                <td>${r.form_name || ("Form " + r.form_template_id)}</td>
+                <td>${r.overall_rating}</td>
+                <td>${r.overall_sentiment}</td>
+            `;
+            tbody.appendChild(tr);
+        });
+
+        document.getElementById("totalFeedbacks").textContent = data.length;
+    } catch (e) {
+        console.error("loadRecentFeedbacks error:", e);
+    }
+}
+
+/* Load all feedbacks for Feedbacks tab */
+async function loadAllFeedbacks(filters = {}) {
+    const params = new URLSearchParams();
+    if (filters.date) params.append("date", filters.date);
+    if (filters.form) params.append("form", filters.form);
+    if (filters.rating) params.append("rating", filters.rating);
+
+    try {
+        const res = await fetch(`${API_BASE}/admin/all-feedbacks?` + params.toString());
+        const data = await res.json();
+        const tbody = document.getElementById("allFeedbacksBody");
+        tbody.innerHTML = "";
+
+        if (!res.ok || !Array.isArray(data) || data.length === 0) {
+            const tr = document.createElement("tr");
+            const td = document.createElement("td");
+            td.colSpan = 6;
+            td.textContent = "Feedback list will appear here.";
+            tr.appendChild(td);
+            tbody.appendChild(tr);
+            return;
+        }
+
+        data.forEach(r => {
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+                <td>${r.id}</td>
+                <td>${r.submitted_at}</td>
+                <td>${r.form_name || ("Form " + r.form_template_id)}</td>
+                <td>${r.overall_rating}</td>
+                <td>${r.overall_sentiment}</td>
+                <td>
+                    <button class="open-btn" type="button" onclick="openFormAnalytics(${r.form_template_id})">
+                        View Reports / Analytics
+                    </button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+    } catch (e) {
+        console.error("loadAllFeedbacks error:", e);
+    }
+}
+
+/* Filter button */
+document.getElementById("applyFeedbackFilterBtn").addEventListener("click", () => {
+    const date = document.getElementById("filterDate").value;
+    const form = document.getElementById("filterForm").value.trim();
+    const rating = document.getElementById("filterRating").value;
+    loadAllFeedbacks({ date, form, rating });
+});
+
+/* Initial loads */
+loadFormsList();
+loadRecentFeedbacks();
+loadAllFeedbacks();
 </script>
 
 </body>

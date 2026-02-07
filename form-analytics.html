@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Form Analytics</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="admin-home.css">
+    <style>
+        .analytics-container {
+            min-height: 100vh;
+            padding-top: 70px;
+            padding: 90px 40px 40px 40px;
+        }
+
+        .analytics-header {
+            margin-bottom: 20px;
+        }
+
+        .analytics-header h2 {
+            margin-bottom: 5px;
+        }
+
+        .analytics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 20px;
+            margin-top: 10px;
+        }
+
+        .analytics-card {
+            background: rgba(0, 0, 0, 0.75);
+            border-radius: 12px;
+            padding: 18px;
+            box-shadow: 0 0 15px #00ff99;
+        }
+
+        .analytics-card h3 {
+            margin-bottom: 8px;
+        }
+
+        .bar-chart {
+            margin-top: 10px;
+        }
+
+        .bar-row {
+            display: flex;
+            align-items: center;
+            margin-bottom: 6px;
+        }
+
+        .bar-label {
+            min-width: 90px;
+            font-size: 0.9rem;
+            color: #e0fff3;
+        }
+
+        .bar-track {
+            flex: 1;
+            height: 10px;
+            background: #111;
+            border-radius: 6px;
+            overflow: hidden;
+            margin-right: 8px;
+        }
+
+        .bar-fill {
+            height: 100%;
+            width: 0;
+            border-radius: 6px;
+            background: linear-gradient(90deg, #00ff99, #00b8ff);
+            transition: width 0.8s ease-out;
+        }
+
+        .bar-fill.negative {
+            background: linear-gradient(90deg, #ff0066, #ff9900);
+        }
+
+        .bar-value {
+            min-width: 30px;
+            font-size: 0.85rem;
+            text-align: right;
+        }
+
+        .estimate-row {
+            margin-top: 10px;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .estimate-row input[type="number"] {
+            padding: 6px 8px;
+            border-radius: 6px;
+            border: 1px solid #00ff99;
+            background: transparent;
+            color: #ffffff;
+            outline: none;
+            max-width: 120px;
+        }
+
+        .estimate-row button {
+            padding: 6px 12px;
+            border-radius: 6px;
+            border: none;
+            font-weight: bold;
+            cursor: pointer;
+            background: #00ff99;
+            color: #000000;
+        }
+
+        .estimate-row button:hover {
+            box-shadow: 0 0 10px #00ff99;
+        }
+
+        .estimate-note {
+            font-size: 0.8rem;
+            color: #e0fff3;
+        }
+
+        .list-small {
+            margin-top: 8px;
+            max-height: 160px;
+            overflow-y: auto;
+            font-size: 0.85rem;
+        }
+
+        .list-small li {
+            margin-bottom: 4px;
+        }
+
+        .back-link-row {
+            margin-top: 20px;
+        }
+
+        .back-link-row .secondary-btn {
+            padding: 8px 14px;
+            border-radius: 6px;
+            border: none;
+            font-weight: bold;
+            cursor: pointer;
+            background: #ff0066;
+            color: #ffffff;
+        }
+
+        .back-link-row .secondary-btn:hover {
+            box-shadow: 0 0 10px #ff0066;
+        }
+
+        @media (max-width: 768px) {
+            .analytics-container {
+                padding: 90px 20px 20px 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<nav class="navbar">
+    <div class="logo">Anonymous Feedback System - Admin</div>
+</nav>
+
+<section class="analytics-container">
+    <div class="analytics-header">
+        <h2 id="formTitle">Form Analytics</h2>
+        <p class="subtext" id="formMeta"></p>
+    </div>
+
+    <div class="analytics-grid">
+        <!-- Positive / Negative overview -->
+        <div class="analytics-card">
+            <h3>Positive vs Negative Feedback</h3>
+            <p class="subtext">Overall distribution of feedback sentiment.</p>
+            <div class="bar-chart" id="sentimentBars">
+                <!-- bars injected -->
+            </div>
+            <ul class="list-small" id="negativeReasonsList">
+                <!-- negative reasons -->
+            </ul>
+        </div>
+
+        <!-- IP failures / spam -->
+        <div class="analytics-card">
+            <h3>Failed / Blocked Attempts</h3>
+            <p class="subtext">Estimated number of IPs blocked by rate limits.</p>
+            <div id="failedAttemptsStats" class="subtext"></div>
+        </div>
+
+        <!-- Estimated vs actual -->
+        <div class="analytics-card">
+            <h3>Estimated vs Actual Submissions</h3>
+            <p class="subtext">Compare your target with actual responses.</p>
+            <div class="estimate-row">
+                <label for="estimateInput">Estimated:</label>
+                <input type="number" id="estimateInput" min="0" placeholder="e.g. 100">
+                <button id="saveEstimateBtn" type="button">Save Estimate</button>
+            </div>
+            <p id="estimateInfo" class="estimate-note"></p>
+            <div class="bar-chart" id="estimateBars" style="margin-top:10px;">
+                <!-- bars injected -->
+            </div>
+        </div>
+
+        <!-- Key patterns & improvement areas -->
+        <div class="analytics-card">
+            <h3>Key Patterns & Improvement Areas</h3>
+            <p class="subtext">Words and sections that need attention.</p>
+            <ul class="list-small" id="keywordsList">
+                <!-- keywords -->
+            </ul>
+            <div class="bar-chart" id="sectionBars" style="margin-top:10px;">
+                <!-- section bars injected -->
+            </div>
+        </div>
+    </div>
+
+    <div class="back-link-row">
+        <button class="secondary-btn" type="button" onclick="goBackToDashboard()">← Back to Dashboard</button>
+    </div>
+</section>
+
+<script>
+const API_BASE = "https://web-production-315e.up.railway.app";
+const urlParams = new URLSearchParams(window.location.search);
+const formId = urlParams.get("form_id");
+
+const formTitleEl = document.getElementById("formTitle");
+const formMetaEl = document.getElementById("formMeta");
+const sentimentBars = document.getElementById("sentimentBars");
+const negativeReasonsList = document.getElementById("negativeReasonsList");
+const failedAttemptsStats = document.getElementById("failedAttemptsStats");
+const estimateInput = document.getElementById("estimateInput");
+const estimateInfo = document.getElementById("estimateInfo");
+const estimateBars = document.getElementById("estimateBars");
+const keywordsList = document.getElementById("keywordsList");
+const sectionBars = document.getElementById("sectionBars");
+const saveEstimateBtn = document.getElementById("saveEstimateBtn");
+
+function goBackToDashboard() {
+    window.location.href = "admin-dashboard.html";
+}
+
+/* Helper to create an animated bar row */
+function createBarRow(label, value, maxValue, isNegative = false) {
+    const row = document.createElement("div");
+    row.className = "bar-row";
+
+    const lbl = document.createElement("div");
+    lbl.className = "bar-label";
+    lbl.textContent = label;
+
+    const track = document.createElement("div");
+    track.className = "bar-track";
+
+    const fill = document.createElement("div");
+    fill.className = "bar-fill";
+    if (isNegative) fill.classList.add("negative");
+
+    const val = document.createElement("div");
+    val.className = "bar-value";
+    val.textContent = value;
+
+    track.appendChild(fill);
+    row.appendChild(lbl);
+    row.appendChild(track);
+    row.appendChild(val);
+
+    const pct = maxValue > 0 ? (value / maxValue) * 100 : 0;
+    requestAnimationFrame(() => {
+        fill.style.width = pct + "%";
+    });
+
+    return row;
+}
+
+/* Load main analytics summary */
+async function loadSummary() {
+    if (!formId) {
+        formTitleEl.textContent = "Invalid form id";
+        return;
+    }
+
+    try {
+        const res = await fetch(`${API_BASE}/admin/form-analytics/summary?form_id=${formId}`);
+        const data = await res.json();
+        if (!res.ok) {
+            formTitleEl.textContent = "Unable to load analytics";
+            formMetaEl.textContent = data.error || "Unknown error";
+            return;
+        }
+
+        formTitleEl.textContent = data.form_name || `Form ${formId}`;
+        formMetaEl.textContent = `Total submissions: ${data.total || 0} | Average rating: ${data.avg_rating || 0}`;
+
+        /* Sentiment bars */
+        sentimentBars.innerHTML = "";
+        const maxSent = Math.max(data.positives || 0, data.negatives || 0, 1);
+        sentimentBars.appendChild(createBarRow("Positive", data.positives || 0, maxSent, false));
+        sentimentBars.appendChild(createBarRow("Negative", data.negatives || 0, maxSent, true));
+
+        /* Negative reasons list */
+        negativeReasonsList.innerHTML = "";
+        (data.negative_reasons || []).forEach(item => {
+            const li = document.createElement("li");
+            li.textContent = `• ${item.reason_text} (${item.count} times)`;
+            negativeReasonsList.appendChild(li);
+        });
+
+        /* Failed attempts */
+        failedAttemptsStats.textContent = `Approximate blocked attempts: ${data.blocked_attempts || 0}`;
+
+        /* Estimate info & bars */
+        if (data.estimated_submissions != null) {
+            estimateInput.value = data.estimated_submissions;
+            estimateInfo.textContent = `Estimated: ${data.estimated_submissions}, Actual: ${data.total || 0}`;
+        } else {
+            estimateInfo.textContent = `No estimate saved yet. Enter a value and click Save Estimate.`;
+        }
+
+        estimateBars.innerHTML = "";
+        const est = data.estimated_submissions || 0;
+        const act = data.total || 0;
+        const maxEA = Math.max(est, act, 1);
+        estimateBars.appendChild(createBarRow("Estimated", est, maxEA, false));
+        estimateBars.appendChild(createBarRow("Actual", act, maxEA, true));
+
+    } catch (e) {
+        console.error("loadSummary error:", e);
+    }
+}
+
+/* Load keywords and section improvement areas */
+async function loadPatterns() {
+    try {
+        const res = await fetch(`${API_BASE}/admin/form-analytics/patterns?form_id=${formId}`);
+        const data = await res.json();
+        if (!res.ok) {
+            return;
+        }
+
+        /* Keywords */
+        keywordsList.innerHTML = "";
+        (data.keywords || []).forEach(k => {
+            const li = document.createElement("li");
+            li.textContent = `• "${k.word}" (${k.count} times)`;
+            keywordsList.appendChild(li);
+        });
+
+        /* Section improvement bars */
+        sectionBars.innerHTML = "";
+        const maxScore = Math.max(...(data.sections || []).map(s => s.issue_score || 0), 1);
+        (data.sections || []).forEach(s => {
+            sectionBars.appendChild(
+                createBarRow(s.section_name || "Section", s.issue_score || 0, maxScore, true)
+            );
+        });
+    } catch (e) {
+        console.error("loadPatterns error:", e);
+    }
+}
+
+/* Save estimate */
+saveEstimateBtn.addEventListener("click", async () => {
+    const val = parseInt(estimateInput.value || "0", 10);
+    if (val < 0) {
+        alert("Estimate cannot be negative.");
+        return;
+    }
+
+    try {
+        const res = await fetch(`${API_BASE}/admin/form-analytics/estimated`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ form_id: parseInt(formId, 10), estimated_submissions: val })
+        });
+        const data = await res.json();
+        if (!res.ok) {
+            alert(data.error || "Failed to save estimate");
+            return;
+        }
+        await loadSummary();
+    } catch (e) {
+        console.error("saveEstimate error:", e);
+    }
+});
+
+loadSummary();
+loadPatterns();
+</script>
+
+</body>
+</html>
