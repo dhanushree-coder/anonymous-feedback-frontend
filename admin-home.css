@@ -357,14 +357,14 @@
 /* Horizontal slider wrapper */
 .analytics-grid {
     display: flex;
-    overflow: hidden;          /* hide other slides */
+    overflow: hidden;          /* hide off-screen slides */
     scroll-behavior: smooth;
     position: relative;
 }
 
 /* Each card is one full slide */
 .analytics-card {
-    flex: 0 0 100%;            /* take full width */
+    flex: 0 0 100%;            /* occupy full container width */
     max-width: 100%;
     background: rgba(0, 0, 0, 0.85);
     border-radius: 12px;
@@ -485,7 +485,7 @@
     right: 8px;
 }
 
-/* Mobile: stack, no carousel */
+/* Mobile: stack, not carousel */
 @media (max-width: 768px) {
     .analytics-grid {
         display: block;
