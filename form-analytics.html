@@ -5,7 +5,7 @@
     <title>Form Analytics</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="admin-home.css">
-    <!-- Keep only basic layout here; carousel + card styling lives in admin-home.css -->
+    <!-- Only keeping local layout helpers; core theme + carousel in admin-home.css -->
     <style>
         .analytics-container {
             min-height: 100vh;
@@ -128,13 +128,13 @@
     <button type="button" class="analytics-nav-arrow left" id="analyticsPrevBtn">&#8249;</button>
     <button type="button" class="analytics-nav-arrow right" id="analyticsNextBtn">&#8250;</button>
 
-    <!-- Carousel: one card per slide -->
+    <!-- Carousel wrapper -->
     <div class="analytics-grid" id="analyticsCarousel">
         <!-- Positive / Negative overview -->
         <div class="analytics-card">
             <h3>Positive vs Negative Feedback</h3>
             <p class="subtext">Overall distribution of feedback sentiment.</p>
-            <div class="bar-chart" id="sentimentBars"></div>
+            <div class="bar-chart" id="sentimentBars" data-bar-scope="sentiment"></div>
             <ul class="list-small" id="negativeReasonsList"></ul>
         </div>
 
@@ -155,7 +155,7 @@
                 <button id="saveEstimateBtn" type="button">Save Estimate</button>
             </div>
             <p id="estimateInfo" class="estimate-note"></p>
-            <div class="bar-chart" id="estimateBars" style="margin-top:10px;"></div>
+            <div class="bar-chart" id="estimateBars" data-bar-scope="estimate" style="margin-top:10px;"></div>
         </div>
 
         <!-- Key patterns & improvement areas -->
@@ -163,7 +163,7 @@
             <h3>Key Patterns & Improvement Areas</h3>
             <p class="subtext">Words and sections that need attention.</p>
             <ul class="list-small" id="keywordsList"></ul>
-            <div class="bar-chart" id="sectionBars" style="margin-top:10px;"></div>
+            <div class="bar-chart" id="sectionBars" data-bar-scope="sections" style="margin-top:10px;"></div>
         </div>
     </div>
 
@@ -193,7 +193,8 @@ function goBackToDashboard() {
     window.location.href = "admin-dashboard.html";
 }
 
-/* Helper to create an animated bar row */
+/* Helper to create an animated bar row.
+   We reset width and opacity first, then animate like your skill bars. */
 function createBarRow(label, value, maxValue, isNegative = false) {
     const row = document.createElement("div");
     row.className = "bar-row";
@@ -219,11 +220,37 @@ function createBarRow(label, value, maxValue, isNegative = false) {
     row.appendChild(val);
 
     const pct = maxValue > 0 ? (value / maxValue) * 100 : 0;
+
+    // Start from 0 like portfolio skill progress
+    fill.style.width = "0%";
+    fill.style.opacity = "0";
+
     requestAnimationFrame(() => {
+        // next frame – trigger smooth transition
+        fill.style.opacity = "1";
         fill.style.width = pct + "%";
     });
 
     return row;
+}
+
+/* Re‑animate all bars inside a given container (used when slide becomes active) */
+function reanimateBarsIn(container) {
+    const fills = container.querySelectorAll(".bar-fill");
+    fills.forEach(fill => {
+        const targetWidth = fill.getAttribute("data-target-width");
+        if (!targetWidth) return;
+        fill.style.transition = "none";
+        fill.style.width = "0%";
+        fill.style.opacity = "0";
+        // force reflow
+        void fill.offsetWidth;
+        fill.style.transition = "width 1s ease-in-out, opacity 0.5s ease-in-out";
+        requestAnimationFrame(() => {
+            fill.style.opacity = "1";
+            fill.style.width = targetWidth;
+        });
+    });
 }
 
 /* Load main analytics summary */
@@ -248,8 +275,21 @@ async function loadSummary() {
         /* Sentiment bars */
         sentimentBars.innerHTML = "";
         const maxSent = Math.max(data.positives || 0, data.negatives || 0, 1);
-        sentimentBars.appendChild(createBarRow("Positive", data.positives || 0, maxSent, false));
-        sentimentBars.appendChild(createBarRow("Negative", data.negatives || 0, maxSent, true));
+        const posRow = createBarRow("Positive", data.positives || 0, maxSent, false);
+        const negRow = createBarRow("Negative", data.negatives || 0, maxSent, true);
+
+        // store final width for re‑animation
+        posRow.querySelector(".bar-fill").setAttribute(
+            "data-target-width",
+            `${(data.positives || 0) / maxSent * 100}%`
+        );
+        negRow.querySelector(".bar-fill").setAttribute(
+            "data-target-width",
+            `${(data.negatives || 0) / maxSent * 100}%`
+        );
+
+        sentimentBars.appendChild(posRow);
+        sentimentBars.appendChild(negRow);
 
         /* Negative reasons list */
         negativeReasonsList.innerHTML = "";
@@ -274,8 +314,20 @@ async function loadSummary() {
         const est = data.estimated_submissions || 0;
         const act = data.total || 0;
         const maxEA = Math.max(est, act, 1);
-        estimateBars.appendChild(createBarRow("Estimated", est, maxEA, false));
-        estimateBars.appendChild(createBarRow("Actual", act, maxEA, true));
+        const estRow = createBarRow("Estimated", est, maxEA, false);
+        const actRow = createBarRow("Actual", act, maxEA, true);
+
+        estRow.querySelector(".bar-fill").setAttribute(
+            "data-target-width",
+            `${(est || 0) / maxEA * 100}%`
+        );
+        actRow.querySelector(".bar-fill").setAttribute(
+            "data-target-width",
+            `${(act || 0) / maxEA * 100}%`
+        );
+
+        estimateBars.appendChild(estRow);
+        estimateBars.appendChild(actRow);
 
     } catch (e) {
         console.error("loadSummary error:", e);
@@ -303,9 +355,12 @@ async function loadPatterns() {
         sectionBars.innerHTML = "";
         const maxScore = Math.max(...(data.sections || []).map(s => s.issue_score || 0), 1);
         (data.sections || []).forEach(s => {
-            sectionBars.appendChild(
-                createBarRow(s.section_name || "Section", s.issue_score || 0, maxScore, true)
+            const row = createBarRow(s.section_name || "Section", s.issue_score || 0, maxScore, true);
+            row.querySelector(".bar-fill").setAttribute(
+                "data-target-width",
+                `${(s.issue_score || 0) / maxScore * 100}%`
             );
+            sectionBars.appendChild(row);
         });
     } catch (e) {
         console.error("loadPatterns error:", e);
@@ -337,9 +392,6 @@ saveEstimateBtn.addEventListener("click", async () => {
     }
 });
 
-loadSummary();
-loadPatterns();
-
 /* ===== Carousel logic for analytics cards (one card at a time) ===== */
 const carouselEl = document.getElementById("analyticsCarousel");
 const prevBtn = document.getElementById("analyticsPrevBtn");
@@ -362,6 +414,11 @@ function showSlide(index) {
         left: offset,
         behavior: "smooth"
     });
+
+    // Re‑animate bars only for the visible slide to mimic your skill hover smoothness
+    const activeSlide = slides[currentIndex];
+    const barContainers = activeSlide.querySelectorAll(".bar-chart");
+    barContainers.forEach(container => reanimateBarsIn(container));
 }
 
 function nextSlide() {
@@ -402,15 +459,13 @@ function resetAutoSlide() {
     startAutoSlide();
 }
 
-/* Start and show first slide */
-showSlide(0);
-startAutoSlide();
-
-/* Pause on hover over carousel */
-carouselEl.addEventListener("mouseenter", stopAutoSlide);
-carouselEl.addEventListener("mouseleave", startAutoSlide);
-
-/* Bars already re‑animate on each reload via createBarRow + CSS transitions */
+/* Initial load: data then carousel start so layout is stable */
+document.addEventListener("DOMContentLoaded", async () => {
+    await loadSummary();
+    await loadPatterns();
+    showSlide(0);
+    startAutoSlide();
+});
 </script>
 
 </body>
