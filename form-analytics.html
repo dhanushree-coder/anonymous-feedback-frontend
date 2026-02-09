@@ -11,10 +11,16 @@
             min-height: 100vh;
             padding-top: 70px;
             padding: 90px 40px 40px 40px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;      /* center horizontally */
+            justify-content: center;  /* center vertically like portfolio slide */
         }
 
         .analytics-header {
             margin-bottom: 20px;
+            width: 100%;
+            max-width: 900px;
         }
 
         .analytics-header h2 {
@@ -25,16 +31,18 @@
             display: flex;
             align-items: center;
             margin-bottom: 6px;
+            gap: 8px;
         }
 
         .bar-label {
             min-width: 90px;
             font-size: 0.9rem;
             color: #e0fff3;
+            text-align: left;
         }
 
         .bar-value {
-            min-width: 30px;
+            min-width: 40px;
             font-size: 0.85rem;
             text-align: right;
         }
@@ -45,6 +53,7 @@
             gap: 10px;
             align-items: center;
             flex-wrap: wrap;
+            justify-content: center;
         }
 
         .estimate-row input[type="number"] {
@@ -74,6 +83,8 @@
         .estimate-note {
             font-size: 0.8rem;
             color: #e0fff3;
+            text-align: center;
+            margin-top: 6px;
         }
 
         .list-small {
@@ -85,10 +96,15 @@
 
         .list-small li {
             margin-bottom: 4px;
+            text-align: left;
         }
 
         .back-link-row {
             margin-top: 20px;
+            width: 100%;
+            max-width: 900px;
+            display: flex;
+            justify-content: flex-start;
         }
 
         .back-link-row .secondary-btn {
@@ -108,6 +124,11 @@
         @media (max-width: 768px) {
             .analytics-container {
                 padding: 90px 20px 20px 20px;
+                justify-content: flex-start;
+            }
+
+            .back-link-row {
+                justify-content: center;
             }
         }
     </style>
@@ -128,7 +149,7 @@
     <button type="button" class="analytics-nav-arrow left" id="analyticsPrevBtn">&#8249;</button>
     <button type="button" class="analytics-nav-arrow right" id="analyticsNextBtn">&#8250;</button>
 
-    <!-- Carousel wrapper -->
+    <!-- Carousel wrapper (centered, fixed max width) -->
     <div class="analytics-grid" id="analyticsCarousel">
         <!-- Positive / Negative overview -->
         <div class="analytics-card">
@@ -221,6 +242,9 @@ function createBarRow(label, value, maxValue, isNegative = false) {
 
     const pct = maxValue > 0 ? (value / maxValue) * 100 : 0;
 
+    // Record target width so we can re‑animate later
+    fill.setAttribute("data-target-width", pct + "%");
+
     // Start from 0 like portfolio skill progress
     fill.style.width = "0%";
     fill.style.opacity = "0";
@@ -278,16 +302,6 @@ async function loadSummary() {
         const posRow = createBarRow("Positive", data.positives || 0, maxSent, false);
         const negRow = createBarRow("Negative", data.negatives || 0, maxSent, true);
 
-        // store final width for re‑animation
-        posRow.querySelector(".bar-fill").setAttribute(
-            "data-target-width",
-            `${(data.positives || 0) / maxSent * 100}%`
-        );
-        negRow.querySelector(".bar-fill").setAttribute(
-            "data-target-width",
-            `${(data.negatives || 0) / maxSent * 100}%`
-        );
-
         sentimentBars.appendChild(posRow);
         sentimentBars.appendChild(negRow);
 
@@ -317,15 +331,6 @@ async function loadSummary() {
         const estRow = createBarRow("Estimated", est, maxEA, false);
         const actRow = createBarRow("Actual", act, maxEA, true);
 
-        estRow.querySelector(".bar-fill").setAttribute(
-            "data-target-width",
-            `${(est || 0) / maxEA * 100}%`
-        );
-        actRow.querySelector(".bar-fill").setAttribute(
-            "data-target-width",
-            `${(act || 0) / maxEA * 100}%`
-        );
-
         estimateBars.appendChild(estRow);
         estimateBars.appendChild(actRow);
 
@@ -353,13 +358,10 @@ async function loadPatterns() {
 
         /* Section improvement bars */
         sectionBars.innerHTML = "";
-        const maxScore = Math.max(...(data.sections || []).map(s => s.issue_score || 0), 1);
-        (data.sections || []).forEach(s => {
+        const sections = data.sections || [];
+        const maxScore = Math.max(...sections.map(s => s.issue_score || 0), 1);
+        sections.forEach(s => {
             const row = createBarRow(s.section_name || "Section", s.issue_score || 0, maxScore, true);
-            row.querySelector(".bar-fill").setAttribute(
-                "data-target-width",
-                `${(s.issue_score || 0) / maxScore * 100}%`
-            );
             sectionBars.appendChild(row);
         });
     } catch (e) {
@@ -392,7 +394,7 @@ saveEstimateBtn.addEventListener("click", async () => {
     }
 });
 
-/* ===== Carousel logic for analytics cards (one card at a time) ===== */
+/* ===== Carousel logic for analytics cards (one card at a time, centered) ===== */
 const carouselEl = document.getElementById("analyticsCarousel");
 const prevBtn = document.getElementById("analyticsPrevBtn");
 const nextBtn = document.getElementById("analyticsNextBtn");
@@ -415,7 +417,7 @@ function showSlide(index) {
         behavior: "smooth"
     });
 
-    // Re‑animate bars only for the visible slide to mimic your skill hover smoothness
+    // Re‑animate bars only for the visible slide
     const activeSlide = slides[currentIndex];
     const barContainers = activeSlide.querySelectorAll(".bar-chart");
     barContainers.forEach(container => reanimateBarsIn(container));

@@ -353,15 +353,23 @@
 
 /* ===== ENHANCED ANALYTICS CARDS & CAROUSEL ===== */
 
-/* Horizontal slider wrapper – one full card visible */
+/* Analytics container positioning is handled in HTML inline style; here we center grid width */
+.analytics-container {
+    position: relative;
+}
+
+/* Horizontal slider wrapper – one full card visible, centered, fixed max width */
 .analytics-grid {
     display: flex;
     overflow: hidden;
     scroll-behavior: smooth;
     position: relative;
+    width: 100%;
+    max-width: 900px;         /* like a nicely centered card area */
+    margin: 0 auto;           /* center */
 }
 
-/* Each card is one full slide, Netflix-style */
+/* Each card is one full slide */
 .analytics-card {
     flex: 0 0 100%;
     max-width: 100%;
@@ -372,6 +380,9 @@
     position: relative;
     transition: box-shadow 0.4s ease, transform 0.4s ease, border-color 0.4s ease;
     border: 1px solid rgba(0, 255, 153, 0.4);
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
 }
 
 /* Neon hover */
@@ -384,10 +395,12 @@
 /* Inner spacing */
 .analytics-card h3 {
     margin-bottom: 8px;
+    text-align: center;
 }
 
 .analytics-card .subtext {
     margin-bottom: 10px;
+    text-align: center;
 }
 
 /* Bar chart */
@@ -400,6 +413,8 @@
     background: #050505;
     border-radius: 6px;
     overflow: hidden;
+    flex: 1;
+    height: 16px;
 }
 
 /* Smooth, neon bar fill – same “smoothness” feel as your skills */
@@ -449,10 +464,6 @@
 }
 
 /* Carousel arrows */
-.analytics-container {
-    position: relative;
-}
-
 .analytics-nav-arrow {
     position: absolute;
     top: 50%;
@@ -479,11 +490,11 @@
 }
 
 .analytics-nav-arrow.left {
-    left: 8px;
+    left: calc(50% - 480px); /* align to grid left (~900px/2) */
 }
 
 .analytics-nav-arrow.right {
-    right: 8px;
+    right: calc(50% - 480px); /* align to grid right */
 }
 
 /* Mobile: stack, no carousel */
@@ -491,6 +502,7 @@
     .analytics-grid {
         display: block;
         overflow-x: visible;
+        max-width: 100%;
     }
 
     .analytics-card {
