@@ -164,6 +164,7 @@
             <h3>Failed / Blocked Attempts</h3>
             <p class="subtext">Estimated number of IPs blocked by rate limits.</p>
             <div id="failedAttemptsStats" class="subtext"></div>
+            <ul class="list-small" id="blockedIpsList"></ul>
         </div>
 
         <!-- Estimated vs actual -->
@@ -203,6 +204,7 @@ const formMetaEl = document.getElementById("formMeta");
 const sentimentBars = document.getElementById("sentimentBars");
 const negativeReasonsList = document.getElementById("negativeReasonsList");
 const failedAttemptsStats = document.getElementById("failedAttemptsStats");
+const blockedIpsList = document.getElementById("blockedIpsList");
 const estimateInput = document.getElementById("estimateInput");
 const estimateInfo = document.getElementById("estimateInfo");
 const estimateBars = document.getElementById("estimateBars");
@@ -315,6 +317,15 @@ async function loadSummary() {
 
         /* Failed attempts */
         failedAttemptsStats.textContent = `Approximate blocked attempts: ${data.blocked_attempts || 0}`;
+
+        /* Blocked IP hashes list (from blocked_feedback_attempts) */
+        blockedIpsList.innerHTML = "";
+        (data.blocked_ips || []).forEach(item => {
+            const li = document.createElement("li");
+            // Show hashed IP + count + reasons (no real IPs exposed)
+            li.textContent = `• ${item.client_ip_hash} → ${item.attempts} blocked (${item.reasons})`;
+            blockedIpsList.appendChild(li);
+        });
 
         /* Estimate info & bars */
         if (data.estimated_submissions != null) {
