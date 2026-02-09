@@ -56,7 +56,7 @@
                         <tr>
                             <th>ID</th>
                             <th>Date</th>
-                            <th>Form</th>
+                            <th>Form</hth>
                             <th>Rating</th>
                             <th>Sentiment</th>
                         </tr>
@@ -319,7 +319,7 @@ function openCreateForm() {
     window.location.href = "create-form.html";
 }
 
-/* Load forms summary for Forms tab */
+/* Load forms summary for Forms tab and use to compute total feedbacks */
 async function loadFormsList() {
     try {
         const res = await fetch(`${API_BASE}/admin/forms-summary`);
@@ -334,10 +334,16 @@ async function loadFormsList() {
             td.textContent = "No forms yet.";
             tr.appendChild(td);
             tbody.appendChild(tr);
+            // no forms -> 0 total feedbacks
+            document.getElementById("totalFeedbacks").textContent = 0;
             return;
         }
 
+        let totalFeedbackCount = 0;
+
         data.forEach(f => {
+            totalFeedbackCount += (f.submissions || 0);
+
             const tr = document.createElement("tr");
             tr.innerHTML = `
                 <td>${f.id}</td>
@@ -352,6 +358,9 @@ async function loadFormsList() {
             `;
             tbody.appendChild(tr);
         });
+
+        // Update Total Feedbacks card on Home
+        document.getElementById("totalFeedbacks").textContent = totalFeedbackCount;
     } catch (e) {
         console.error("loadFormsList error:", e);
     }
@@ -377,10 +386,22 @@ async function loadRecentFeedbacks() {
             td.textContent = "No data yet.";
             tr.appendChild(td);
             tbody.appendChild(tr);
+            // If no recent, pending/flagged = 0
+            document.getElementById("pendingReviews").textContent = 0;
+            document.getElementById("flaggedFeedbacks").textContent = 0;
             return;
         }
 
+        let pendingCount = 0;
+        let flaggedCount = 0;
+
         data.forEach(r => {
+            // Consider rating <= 2 or negative sentiment as "pending review"
+            if ((r.overall_rating && r.overall_rating <= 2) || r.overall_sentiment === "negative") {
+                pendingCount += 1;
+                flaggedCount += 1;
+            }
+
             const tr = document.createElement("tr");
             tr.innerHTML = `
                 <td>${r.id}</td>
@@ -392,7 +413,9 @@ async function loadRecentFeedbacks() {
             tbody.appendChild(tr);
         });
 
-        document.getElementById("totalFeedbacks").textContent = data.length;
+        // Update cards
+        document.getElementById("pendingReviews").textContent = pendingCount;
+        document.getElementById("flaggedFeedbacks").textContent = flaggedCount;
     } catch (e) {
         console.error("loadRecentFeedbacks error:", e);
     }
@@ -442,6 +465,38 @@ async function loadAllFeedbacks(filters = {}) {
     }
 }
 
+/* Load anonymous users summary for Users tab */
+async function loadUsersSummary() {
+    try {
+        const res = await fetch(`${API_BASE}/admin/users-summary`);
+        const data = await res.json();
+        const tbody = document.getElementById("usersBody");
+        tbody.innerHTML = "";
+
+        if (!res.ok || !Array.isArray(data) || data.length === 0) {
+            const tr = document.createElement("tr");
+            const td = document.createElement("td");
+            td.colSpan = 3;
+            td.textContent = "User summary will appear here.";
+            tr.appendChild(td);
+            tbody.appendChild(tr);
+            return;
+        }
+
+        data.forEach(u => {
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+                <td>${u.client_ip_hash}</td>
+                <td>${u.total_submissions}</td>
+                <td>${u.last_submission}</td>
+            `;
+            tbody.appendChild(tr);
+        });
+    } catch (e) {
+        console.error("loadUsersSummary error:", e);
+    }
+}
+
 /* Filter button */
 document.getElementById("applyFeedbackFilterBtn").addEventListener("click", () => {
     const date = document.getElementById("filterDate").value;
@@ -454,6 +509,7 @@ document.getElementById("applyFeedbackFilterBtn").addEventListener("click", () =
 loadFormsList();
 loadRecentFeedbacks();
 loadAllFeedbacks();
+loadUsersSummary();
 </script>
 
 </body>
