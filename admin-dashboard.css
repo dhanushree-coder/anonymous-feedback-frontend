@@ -1,0 +1,42 @@
+/* Minimal additions for three-dots menu and reports table, no theme change */
+        .actions-cell {
+            position: relative;
+        }
+        .dots-btn {
+            background: transparent;
+            border: none;
+            color: #ffffff;
+            cursor: pointer;
+            font-size: 18px;
+        }
+        .dots-menu {
+            position: absolute;
+            right: 0;
+            top: 24px;
+            background: rgba(0,0,0,0.9);
+            border-radius: 6px;
+            min-width: 160px;
+            box-shadow: 0 0 8px rgba(0,0,0,0.6);
+            z-index: 10;
+            display: none;
+        }
+        .dots-menu.open {
+            display: block;
+        }
+        .dots-menu button {
+            display: block;
+            width: 100%;
+            padding: 6px 10px;
+            border: none;
+            background: transparent;
+            color: #ffffff;
+            text-align: left;
+            font-size: 0.9rem;
+            cursor: pointer;
+        }
+        .dots-menu button:hover {
+            background: rgba(0,255,153,0.1);
+        }
+        .dash-table td.actions-cell {
+            white-space: nowrap;
+        }

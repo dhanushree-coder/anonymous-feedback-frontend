@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Feedback Details</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="admin-home.css">
+    <style>
+        .details-container {
+            min-height: 100vh;
+            padding-top: 70px;
+            padding: 90px 40px 40px 40px;
+        }
+        .details-header {
+            margin-bottom: 20px;
+        }
+        .details-grid {
+            display: grid;
+            grid-template-columns: 2fr 3fr;
+            gap: 20px;
+        }
+        .details-card {
+            background: rgba(0, 0, 0, 0.7);
+            border-radius: 10px;
+            padding: 16px 20px;
+            box-shadow: 0 0 10px rgba(0, 255, 153, 0.3);
+        }
+        .details-card h3 {
+            margin-bottom: 10px;
+        }
+        .meta-line {
+            font-size: 0.9rem;
+            margin-bottom: 4px;
+        }
+        .answers-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .answers-table th,
+        .answers-table td {
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 6px 4px;
+            text-align: left;
+            font-size: 0.9rem;
+        }
+        .answers-table th {
+            font-weight: bold;
+        }
+        .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+        }
+        .badge-positive {
+            background: #00ff99;
+            color: #000;
+        }
+        .badge-negative {
+            background: #ff0066;
+            color: #fff;
+        }
+        .badge-neutral {
+            background: #ffaa00;
+            color: #000;
+        }
+        .back-row {
+            margin-top: 20px;
+        }
+        .back-row button {
+            padding: 8px 14px;
+            border-radius: 6px;
+            border: none;
+            font-weight: bold;
+            cursor: pointer;
+            background: #ff0066;
+            color: #ffffff;
+        }
+        .back-row button:hover {
+            box-shadow: 0 0 10px #ff0066;
+        }
+        @media (max-width: 900px) {
+            .details-container {
+                padding: 90px 20px 20px 20px;
+            }
+            .details-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<nav class="navbar">
+    <div class="logo">Anonymous Feedback System - Admin</div>
+</nav>
+
+<section class="details-container">
+    <div class="details-header">
+        <h2 id="detailsTitle">Feedback Details</h2>
+        <p class="subtext" id="detailsMeta"></p>
+    </div>
+
+    <div class="details-grid">
+        <div class="details-card" id="summaryCard">
+            <h3>Summary</h3>
+            <p class="meta-line" id="metaForm"></p>
+            <p class="meta-line" id="metaDate"></p>
+            <p class="meta-line" id="metaRating"></p>
+            <p class="meta-line" id="metaSentiment"></p>
+            <p class="meta-line" id="metaIpHash"></p>
+            <p class="meta-line" id="metaSaved"></p>
+        </div>
+
+        <div class="details-card">
+            <h3>Answers</h3>
+            <table class="answers-table">
+                <thead>
+                    <tr>
+                        <th>Section</th>
+                        <th>Question</th>
+                        <th>Answer</th>
+                    </tr>
+                </thead>
+                <tbody id="answersBody">
+                    <tr>
+                        <td colspan="3">Loading answers...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="back-row">
+        <button type="button" onclick="goBack()">← Back to Dashboard</button>
+    </div>
+</section>
+
+<script>
+const API_BASE = "https://web-production-315e.up.railway.app";
+const urlParams = new URLSearchParams(window.location.search);
+const responseId = urlParams.get("response_id");
+
+const detailsTitle = document.getElementById("detailsTitle");
+const detailsMeta = document.getElementById("detailsMeta");
+const metaForm = document.getElementById("metaForm");
+const metaDate = document.getElementById("metaDate");
+const metaRating = document.getElementById("metaRating");
+const metaSentiment = document.getElementById("metaSentiment");
+const metaIpHash = document.getElementById("metaIpHash");
+const metaSaved = document.getElementById("metaSaved");
+const answersBody = document.getElementById("answersBody");
+
+function goBack() {
+    window.location.href = "admin-dashboard.html";
+}
+
+function sentimentBadge(sentiment) {
+    const span = document.createElement("span");
+    span.classList.add("badge");
+    if (sentiment === "positive") span.classList.add("badge-positive");
+    else if (sentiment === "negative") span.classList.add("badge-negative");
+    else span.classList.add("badge-neutral");
+    span.textContent = sentiment || "unknown";
+    return span.outerHTML;
+}
+
+async function loadDetails() {
+    if (!responseId) {
+        detailsTitle.textContent = "Invalid response id";
+        return;
+    }
+    try {
+        const res = await fetch(`${API_BASE}/admin/feedback/${responseId}`);
+        const data = await res.json();
+        if (!res.ok) {
+            detailsTitle.textContent = "Unable to load feedback";
+            detailsMeta.textContent = data.error || "Unknown error";
+            return;
+        }
+
+        detailsTitle.textContent = `Feedback #${data.id}`;
+        detailsMeta.textContent = `Form: ${data.form_name || ("Form " + data.form_template_id)} | Submitted at: ${data.submitted_at}`;
+
+        metaForm.textContent = `Form: ${data.form_name || ("Form " + data.form_template_id)} (ID: ${data.form_template_id})`;
+        metaDate.textContent = `Submitted at: ${data.submitted_at}`;
+        metaRating.textContent = `Overall Rating: ${data.overall_rating}`;
+        metaSentiment.innerHTML = `Sentiment: ${sentimentBadge(data.overall_sentiment)}`;
+        metaIpHash.textContent = `User IP Hash: ${data.client_ip_hash || "N/A"}`;
+        metaSaved.textContent = `Saved for reference: ${data.saved_flag ? "Yes" : "No"}`;
+
+        answersBody.innerHTML = "";
+        if (!Array.isArray(data.answers) || data.answers.length === 0) {
+            const tr = document.createElement("tr");
+            const td = document.createElement("td");
+            td.colSpan = 3;
+            td.textContent = "No answers found.";
+            tr.appendChild(td);
+            answersBody.appendChild(tr);
+            return;
+        }
+
+        data.answers.forEach(a => {
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+                <td>${a.section_name || "-"}</td>
+                <td>${a.question_text || "-"}</td>
+                <td>${a.answer_text || "-"}</td>
+            `;
+            answersBody.appendChild(tr);
+        });
+    } catch (e) {
+        console.error("loadDetails error:", e);
+    }
+}
+
+document.addEventListener("DOMContentLoaded", loadDetails);
+</script>
+
+</body>
+</html>

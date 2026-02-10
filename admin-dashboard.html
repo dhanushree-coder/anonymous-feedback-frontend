@@ -5,6 +5,8 @@
     <title>Admin Dashboard</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="admin-home.css">
+    <link rel="stylesheet" href="admin-dashboard.css">
+    
 </head>
 <body>
 
@@ -56,7 +58,7 @@
                         <tr>
                             <th>ID</th>
                             <th>Date</th>
-                            <th>Form</hth>
+                            <th>Form</th>
                             <th>Rating</th>
                             <th>Sentiment</th>
                         </tr>
@@ -97,11 +99,12 @@
                             <th>Rating</th>
                             <th>Sentiment</th>
                             <th>Analytics</th>
+                            <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody id="allFeedbacksBody">
                         <tr>
-                            <td colspan="6">Feedback list will appear here.</td>
+                            <td colspan="7">Feedback list will appear here.</td>
                         </tr>
                     </tbody>
                 </table>
@@ -213,11 +216,24 @@
             <h2>Reports / Analytics</h2>
             <div class="section-box">
                 <p class="subtext">
-                    Detailed analytics are available per form from the Feedbacks tab.
+                    Published forms with responses are listed below. View analytics or download a PDF report.
                 </p>
-                <ul class="simple-list">
-                    <li>Open a specific form’s analytics via “View Reports / Analytics” in the Feedbacks tab.</li>
-                </ul>
+                <table class="dash-table">
+                    <thead>
+                        <tr>
+                            <th>Form ID</th>
+                            <th>Form Title</th>
+                            <th>Total Submissions</th>
+                            <th>Average Rating</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="reportsBody">
+                        <tr>
+                            <td colspan="5">Reports will appear here.</td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
         </section>
 
@@ -319,6 +335,21 @@ function openCreateForm() {
     window.location.href = "create-form.html";
 }
 
+/* Open analytics page for a form */
+function openFormAnalytics(formId) {
+    window.location.href = `form-analytics.html?form_id=${formId}`;
+}
+
+/* Open feedback details page */
+function openFeedbackDetails(responseId) {
+    window.location.href = `feedback-details.html?response_id=${responseId}`;
+}
+
+/* Download PDF report for a form */
+function downloadReportPdf(formId) {
+    window.location.href = `${API_BASE}/admin/reports/${formId}/pdf`;
+}
+
 /* Load forms summary for Forms tab and use to compute total feedbacks */
 async function loadFormsList() {
     try {
@@ -334,7 +365,6 @@ async function loadFormsList() {
             td.textContent = "No forms yet.";
             tr.appendChild(td);
             tbody.appendChild(tr);
-            // no forms -> 0 total feedbacks
             document.getElementById("totalFeedbacks").textContent = 0;
             return;
         }
@@ -359,16 +389,10 @@ async function loadFormsList() {
             tbody.appendChild(tr);
         });
 
-        // Update Total Feedbacks card on Home
         document.getElementById("totalFeedbacks").textContent = totalFeedbackCount;
     } catch (e) {
         console.error("loadFormsList error:", e);
     }
-}
-
-/* Open analytics page for a form */
-function openFormAnalytics(formId) {
-    window.location.href = `form-analytics.html?form_id=${formId}`;
 }
 
 /* Load recent submissions for home */
@@ -386,7 +410,6 @@ async function loadRecentFeedbacks() {
             td.textContent = "No data yet.";
             tr.appendChild(td);
             tbody.appendChild(tr);
-            // If no recent, pending/flagged = 0
             document.getElementById("pendingReviews").textContent = 0;
             document.getElementById("flaggedFeedbacks").textContent = 0;
             return;
@@ -396,7 +419,6 @@ async function loadRecentFeedbacks() {
         let flaggedCount = 0;
 
         data.forEach(r => {
-            // Consider rating <= 2 or negative sentiment as "pending review"
             if ((r.overall_rating && r.overall_rating <= 2) || r.overall_sentiment === "negative") {
                 pendingCount += 1;
                 flaggedCount += 1;
@@ -413,7 +435,6 @@ async function loadRecentFeedbacks() {
             tbody.appendChild(tr);
         });
 
-        // Update cards
         document.getElementById("pendingReviews").textContent = pendingCount;
         document.getElementById("flaggedFeedbacks").textContent = flaggedCount;
     } catch (e) {
@@ -437,7 +458,7 @@ async function loadAllFeedbacks(filters = {}) {
         if (!res.ok || !Array.isArray(data) || data.length === 0) {
             const tr = document.createElement("tr");
             const td = document.createElement("td");
-            td.colSpan = 6;
+            td.colSpan = 7;
             td.textContent = "Feedback list will appear here.";
             tr.appendChild(td);
             tbody.appendChild(tr);
@@ -457,11 +478,104 @@ async function loadAllFeedbacks(filters = {}) {
                         View Reports / Analytics
                     </button>
                 </td>
+                <td class="actions-cell">
+                    <button class="dots-btn" type="button">⋮</button>
+                    <div class="dots-menu">
+                        <button type="button" data-action="view" data-id="${r.id}">View Response</button>
+                        <button type="button" data-action="save" data-id="${r.id}">Save for Reference</button>
+                        <button type="button" data-action="delete" data-id="${r.id}">Delete</button>
+                    </div>
+                </td>
             `;
             tbody.appendChild(tr);
         });
+
+        attachDotsMenuHandlers();
     } catch (e) {
         console.error("loadAllFeedbacks error:", e);
+    }
+}
+
+/* Attach three-dots menu logic */
+function attachDotsMenuHandlers() {
+    const rows = document.querySelectorAll("#allFeedbacksBody tr");
+    rows.forEach(row => {
+        const dotsBtn = row.querySelector(".dots-btn");
+        const menu = row.querySelector(".dots-menu");
+        if (!dotsBtn || !menu) return;
+
+        dotsBtn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            closeAllDotsMenus();
+            menu.classList.toggle("open");
+        });
+
+        menu.querySelectorAll("button").forEach(btn => {
+            btn.addEventListener("click", async (e) => {
+                e.stopPropagation();
+                const action = btn.getAttribute("data-action");
+                const id = btn.getAttribute("data-id");
+                if (action === "view") {
+                    openFeedbackDetails(id);
+                } else if (action === "save") {
+                    await saveFeedback(id);
+                } else if (action === "delete") {
+                    await deleteFeedback(id);
+                }
+                menu.classList.remove("open");
+            });
+        });
+    });
+
+    document.addEventListener("click", closeAllDotsMenus);
+}
+
+function closeAllDotsMenus() {
+    document.querySelectorAll(".dots-menu.open").forEach(m => m.classList.remove("open"));
+}
+
+async function saveFeedback(responseId) {
+    if (!confirm("Mark this response as saved for future reference?")) return;
+    try {
+        const res = await fetch(`${API_BASE}/admin/feedback/${responseId}/save`, {
+            method: "POST"
+        });
+        const data = await res.json();
+        if (!res.ok) {
+            alert(data.error || "Failed to save response");
+            return;
+        }
+        alert("Response marked as saved.");
+        const date = document.getElementById("filterDate").value;
+        const form = document.getElementById("filterForm").value.trim();
+        const rating = document.getElementById("filterRating").value;
+        loadAllFeedbacks({ date, form, rating });
+    } catch (e) {
+        console.error("saveFeedback error:", e);
+    }
+}
+
+async function deleteFeedback(responseId) {
+    if (!confirm("Delete this response permanently? This cannot be undone.")) return;
+    try {
+        const res = await fetch(`${API_BASE}/admin/feedback/${responseId}/delete`, {
+            method: "POST"
+        });
+        const data = await res.json();
+        if (!res.ok) {
+            alert(data.error || "Failed to delete response");
+            return;
+        }
+        alert("Response deleted.");
+        const date = document.getElementById("filterDate").value;
+        const form = document.getElementById("filterForm").value.trim();
+        const rating = document.getElementById("filterRating").value;
+        loadAllFeedbacks({ date, form, rating });
+        loadRecentFeedbacks();
+        loadFormsList();
+        loadUsersSummary();
+    } catch (e) {
+        console.error("deleteFeedback error:", e);
     }
 }
 
@@ -497,6 +611,47 @@ async function loadUsersSummary() {
     }
 }
 
+/* Load reports list (published forms with responses) */
+async function loadReportsList() {
+    try {
+        const res = await fetch(`${API_BASE}/admin/reports/forms`);
+        const data = await res.json();
+        const tbody = document.getElementById("reportsBody");
+        tbody.innerHTML = "";
+
+        if (!res.ok || !Array.isArray(data) || data.length === 0) {
+            const tr = document.createElement("tr");
+            const td = document.createElement("td");
+            td.colSpan = 5;
+            td.textContent = "Reports will appear here.";
+            tr.appendChild(td);
+            tbody.appendChild(tr);
+            return;
+        }
+
+        data.forEach(f => {
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+                <td>${f.id}</td>
+                <td>${f.name || "Untitled"}</td>
+                <td>${f.total_submissions || 0}</td>
+                <td>${f.avg_rating != null ? f.avg_rating.toFixed(2) : "0.00"}</td>
+                <td>
+                    <button class="open-btn" type="button" onclick="openFormAnalytics(${f.id})">
+                        View Analytics
+                    </button>
+                    <button class="open-btn" type="button" onclick="downloadReportPdf(${f.id})" style="margin-left:8px;">
+                        Download PDF
+                    </button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+    } catch (e) {
+        console.error("loadReportsList error:", e);
+    }
+}
+
 /* Filter button */
 document.getElementById("applyFeedbackFilterBtn").addEventListener("click", () => {
     const date = document.getElementById("filterDate").value;
@@ -510,6 +665,7 @@ loadFormsList();
 loadRecentFeedbacks();
 loadAllFeedbacks();
 loadUsersSummary();
+loadReportsList();
 </script>
 
 </body>
