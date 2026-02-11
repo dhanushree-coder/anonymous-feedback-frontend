@@ -6,7 +6,6 @@
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="admin-home.css">
     <link rel="stylesheet" href="admin-dashboard.css">
-    
 </head>
 <body>
 
@@ -216,13 +215,14 @@
             <h2>Reports / Analytics</h2>
             <div class="section-box">
                 <p class="subtext">
-                    Published forms with responses are listed below. View analytics or download a PDF report.
+                    Published forms with responses are listed below. View analytics or download a CSV/PDF report.
                 </p>
                 <table class="dash-table">
                     <thead>
                         <tr>
                             <th>Form ID</th>
                             <th>Form Title</th>
+                            <th>Created On</th>
                             <th>Total Submissions</th>
                             <th>Average Rating</th>
                             <th>Actions</th>
@@ -230,7 +230,7 @@
                     </thead>
                     <tbody id="reportsBody">
                         <tr>
-                            <td colspan="5">Reports will appear here.</td>
+                            <td colspan="6">Reports will appear here.</td>
                         </tr>
                     </tbody>
                 </table>
@@ -348,6 +348,11 @@ function openFeedbackDetails(responseId) {
 /* Download PDF report for a form */
 function downloadReportPdf(formId) {
     window.location.href = `${API_BASE}/admin/reports/${formId}/pdf`;
+}
+
+/* Download CSV report for a form */
+function downloadReportCsv(formId) {
+    window.location.href = `${API_BASE}/admin/reports/${formId}/csv`;
 }
 
 /* Load forms summary for Forms tab and use to compute total feedbacks */
@@ -622,7 +627,7 @@ async function loadReportsList() {
         if (!res.ok || !Array.isArray(data) || data.length === 0) {
             const tr = document.createElement("tr");
             const td = document.createElement("td");
-            td.colSpan = 5;
+            td.colSpan = 6;
             td.textContent = "Reports will appear here.";
             tr.appendChild(td);
             tbody.appendChild(tr);
@@ -634,14 +639,18 @@ async function loadReportsList() {
             tr.innerHTML = `
                 <td>${f.id}</td>
                 <td>${f.name || "Untitled"}</td>
+                <td>${f.created_at || "-"}</td>
                 <td>${f.total_submissions || 0}</td>
-                <td>${f.avg_rating != null ? f.avg_rating.toFixed(2) : "0.00"}</td>
+                <td>${f.avg_rating != null ? Number(f.avg_rating).toFixed(2) : "0.00"}</td>
                 <td>
                     <button class="open-btn" type="button" onclick="openFormAnalytics(${f.id})">
                         View Analytics
                     </button>
-                    <button class="open-btn" type="button" onclick="downloadReportPdf(${f.id})" style="margin-left:8px;">
-                        Download PDF
+                    <button class="open-btn" type="button" onclick="downloadReportCsv(${f.id})" style="margin-left:6px;">
+                        CSV
+                    </button>
+                    <button class="open-btn" type="button" onclick="downloadReportPdf(${f.id})" style="margin-left:6px;">
+                        PDF
                     </button>
                 </td>
             `;
