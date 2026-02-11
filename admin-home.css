@@ -514,3 +514,27 @@
         display: none;
     }
 }
+/* ===== DASHBOARD PAGE WRAPPER (MATCH HOME/TEMPLATES FEEL) ===== */
+
+.dashboard-container {
+    min-height: 100vh;
+    padding-top: 70px;
+    padding: 90px 40px 30px 40px; /* like school-page-container */
+    display: flex;
+}
+
+/* keep sidebar fixed as you already have, but align with new padding */
+.sidebar {
+    position: fixed;
+    top: 90px;            /* 70px navbar + 20px top padding */
+    left: 40px;           /* match left padding */
+    bottom: 30px;         /* match bottom padding */
+    width: 240px;
+}
+
+/* shift main content so it clears sidebar + left padding and fits width */
+.dashboard-main {
+    margin-left: calc(40px + 240px + 20px);  /* left padding + sidebar + gap */
+    padding: 0 0 0 0;
+    width: calc(100% - (40px + 240px + 20px) - 40px); /* total minus side paddings */
+}
