@@ -1,731 +1,663 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Admin Dashboard</title>
-    <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="admin-home.css">
-    <link rel="stylesheet" href="admin-dashboard.css">
-    
+    <meta charset="UTF-8">
+    <title>Admin Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="admin-home.css">
+    <link rel="stylesheet" href="admin-dashboard.css">
 </head>
 <body>
 
-
 <nav class="navbar">
-    <div class="logo">Anonymous Feedback System - Admin</div>
+    <div class="logo">Anonymous Feedback System - Admin</div>
 </nav>
 
-
 <div class="dashboard-container">
-    <!-- Sidebar -->
-    <aside class="sidebar">
-        <ul class="sidebar-menu">
-            <li class="sidebar-item active" data-section="home">Dashboard / Home</li>
-            <li class="sidebar-item" data-section="feedbacks">Feedbacks / Responses</li>
-            <li class="sidebar-item" data-section="users">Users</li>
-            <li class="sidebar-item" data-section="forms">Form Management</li>
-            <li class="sidebar-item" data-section="templates">Templates</li>
-            <li class="sidebar-item" data-section="reports">Reports / Analytics</li>
-            <li class="sidebar-item" data-section="settings">Settings</li>
-            <li class="sidebar-item" data-section="help">Help / Support</li>
-            <li class="sidebar-item" data-section="logout">Logout</li>
-        </ul>
-    </aside>
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <ul class="sidebar-menu">
+            <li class="sidebar-item active" data-section="home">Dashboard / Home</li>
+            <li class="sidebar-item" data-section="feedbacks">Feedbacks / Responses</li>
+            <li class="sidebar-item" data-section="users">Users</li>
+            <li class="sidebar-item" data-section="forms">Form Management</li>
+            <li class="sidebar-item" data-section="templates">Templates</li>
+            <li class="sidebar-item" data-section="reports">Reports / Analytics</li>
+            <li class="sidebar-item" data-section="settings">Settings</li>
+            <li class="sidebar-item" data-section="help">Help / Support</li>
+            <li class="sidebar-item" data-section="logout">Logout</li>
+        </ul>
+    </aside>
 
+    <!-- Main content -->
+    <main class="dashboard-main">
+        <!-- Home / Dashboard -->
+        <section id="home" class="dash-section active-section">
+            <h2>Dashboard Overview</h2>
+            <div class="cards-row">
+                <div class="stat-card">
+                    <h3>Total Feedbacks</h3>
+                    <p id="totalFeedbacks">0</p>
+                </div>
+                <div class="stat-card">
+                    <h3>Pending Reviews</h3>
+                    <p id="pendingReviews">0</p>
+                </div>
+                <div class="stat-card">
+                    <h3>Flagged Feedbacks</h3>
+                    <p id="flaggedFeedbacks">0</p>
+                </div>
+            </div>
 
-    <!-- Main content -->
-    <main class="dashboard-main">
-        <!-- Home / Dashboard -->
-        <section id="home" class="dash-section active-section">
-            <h2>Dashboard Overview</h2>
-            <div class="cards-row">
-                <div class="stat-card">
-                    <h3>Total Feedbacks</h3>
-                    <p id="totalFeedbacks">0</p>
-                </div>
-                <div class="stat-card">
-                    <h3>Pending Reviews</h3>
-                    <p id="pendingReviews">0</p>
-                </div>
-                <div class="stat-card">
-                    <h3>Flagged Feedbacks</h3>
-                    <p id="flaggedFeedbacks">0</p>
-                </div>
-            </div>
+            <div class="section-box">
+                <h3>Recent Submissions</h3>
+                <p class="subtext">Latest 5–10 feedbacks will appear here.</p>
+                <table class="dash-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Date</th>
+                            <th>Form</th>
+                            <th>Rating</th>
+                            <th>Sentiment</th>
+                        </tr>
+                    </thead>
+                    <tbody id="recentFeedbacksBody">
+                        <tr>
+                            <td colspan="5">No data yet.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
 
+        <!-- Feedbacks -->
+        <section id="feedbacks" class="dash-section">
+            <h2>Feedbacks / Responses</h2>
+            <div class="section-box">
+                <div class="filter-row">
+                    <input type="date" id="filterDate">
+                    <input type="text" id="filterForm" placeholder="Form name / ID">
+                    <select id="filterRating">
+                        <option value="">All Ratings</option>
+                        <option value="5">5 Stars</option>
+                        <option value="4">4 Stars</option>
+                        <option value="3">3 Stars</option>
+                        <option value="2">2 Stars</option>
+                        <option value="1">1 Star</option>
+                    </select>
+                    <button id="applyFeedbackFilterBtn">Filter</button>
+                </div>
 
-            <div class="section-box">
-                <h3>Recent Submissions</h3>
-                <p class="subtext">Latest 5–10 feedbacks will appear here.</p>
-                <table class="dash-table">
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>Date</th>
-                            <th>Form</th>
-                            <th>Rating</th>
-                            <th>Sentiment</th>
-                        </tr>
-                    </thead>
-                    <tbody id="recentFeedbacksBody">
-                        <tr>
-                            <td colspan="5">No data yet.</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </section>
+                <table class="dash-table">
+                    <thead>
+                        <tr>
+                            <th>Response ID</th>
+                            <th>Date</th>
+                            <th>Form</th>
+                            <th>Rating</th>
+                            <th>Sentiment</th>
+                            <th>Analytics</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="allFeedbacksBody">
+                        <tr>
+                            <td colspan="7">Feedback list will appear here.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
 
+        <!-- Users -->
+        <section id="users" class="dash-section">
+            <h2>Users</h2>
+            <div class="section-box">
+                <p class="subtext">Anonymous tracking without revealing identity.</p>
+                <table class="dash-table">
+                    <thead>
+                        <tr>
+                            <th>IP Hash</th>
+                            <th>Total Submissions</th>
+                            <th>Last Submission</th>
+                        </tr>
+                    </thead>
+                    <tbody id="usersBody">
+                        <tr>
+                            <td colspan="3">User summary will appear here.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
 
-        <!-- Feedbacks -->
-        <section id="feedbacks" class="dash-section">
-            <h2>Feedbacks / Responses</h2>
-            <div class="section-box">
-                <div class="filter-row">
-                    <input type="date" id="filterDate">
-                    <input type="text" id="filterForm" placeholder="Form name / ID">
-                    <select id="filterRating">
-                        <option value="">All Ratings</option>
-                        <option value="5">5 Stars</option>
-                        <option value="4">4 Stars</option>
-                        <option value="3">3 Stars</option>
-                        <option value="2">2 Stars</option>
-                        <option value="1">1 Star</option>
-                    </select>
-                    <button id="applyFeedbackFilterBtn">Filter</button>
-                </div>
+        <!-- Form Management -->
+        <section id="forms" class="dash-section">
+            <h2>Form Management</h2>
+            <div class="section-box">
+                <div class="forms-header-row">
+                    <button type="button" onclick="openCreateForm()">Create New Form</button>
+                </div>
+                <table class="dash-table">
+                    <thead>
+                        <tr>
+                            <th>Form ID</th>
+                            <th>Title</th>
+                            <th>Status</th>
+                            <th>Submissions</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="formsBody">
+                        <tr>
+                            <td colspan="5">Forms will appear here.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
 
+        <!-- Templates -->
+        <section id="templates" class="dash-section">
+            <h2>Templates</h2>
+            <div class="section-box">
+                <p class="subtext">Choose a template by domain and customize or use it directly.</p>
 
-                <table class="dash-table">
-                    <thead>
-                        <tr>
-                            <th>Response ID</th>
-                            <th>Date</th>
-                            <th>Form</th>
-                            <th>Rating</th>
-                            <th>Sentiment</th>
-                            <th>Analytics</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="allFeedbacksBody">
-                        <tr>
-                            <td colspan="7">Feedback list will appear here.</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </section>
+                <div class="templates-grid">
+                    <div class="template-card" title="Customize or use the inbuilt forms to collect unbiased feedbacks from students, parents, and teachers.">
+                        <h3>Schools</h3>
+                        <p>
+                            Design feedback forms for students, teachers, and parents to improve classroom experience,
+                            teaching quality, and infrastructure.
+                        </p>
+                        <button type="button" onclick="openSchoolTemplates()">Open School Templates</button>
+                    </div>
 
+                    <div class="template-card" title="Create course, faculty, and campus life feedbacks tailored for colleges and universities.">
+                        <h3>Colleges</h3>
+                        <p>
+                            Build forms for course feedback, faculty evaluation, campus facilities, and event reviews,
+                            focused on higher education environments.
+                        </p>
+                        <button type="button" onclick="openCollegeTemplates()">Open College Templates</button>
+                    </div>
 
-        <!-- Users -->
-        <section id="users" class="dash-section">
-            <h2>Users</h2>
-            <div class="section-box">
-                <p class="subtext">Anonymous tracking without revealing identity.</p>
-                <table class="dash-table">
-                    <thead>
-                        <tr>
-                            <th>IP Hash</th>
-                            <th>Total Submissions</th>
-                            <th>Last Submission</th>
-                        </tr>
-                    </thead>
-                    <tbody id="usersBody">
-                        <tr>
-                            <td colspan="3">User summary will appear here.</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </section>
+                    <div class="template-card" title="Use ready-made forms to gather anonymous feedback from employees and teams in corporate environments.">
+                        <h3>Corporates</h3>
+                        <p>
+                            Set up forms for employee satisfaction, manager review, team health checks, and
+                            workplace culture without revealing identities.
+                        </p>
+                        <button type="button" onclick="openCorporateTemplates()">Open Corporate Templates</button>
+                    </div>
 
+                    <div class="template-card" title="Collect citizen feedback on public services, schemes, and government offices with ready-to-use templates.">
+                        <h3>Government Services</h3>
+                        <p>
+                            Prepare forms to capture citizen opinions on public services, schemes,
+                            grievance redressal, and department performance.
+                        </p>
+                        <button type="button" onclick="openGovernmentTemplates()">Open Government Templates</button>
+                    </div>
+                </div>
 
-        <!-- Form Management -->
-        <section id="forms" class="dash-section">
-            <h2>Form Management</h2>
-            <div class="section-box">
-                <div class="forms-header-row">
-                    <button type="button" onclick="openCreateForm()">Create New Form</button>
-                </div>
-                <table class="dash-table">
-                    <thead>
-                        <tr>
-                            <th>Form ID</th>
-                            <th>Title</th>
-                            <th>Status</th>
-                            <th>Submissions</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="formsBody">
-                        <tr>
-                            <td colspan="5">Forms will appear here.</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </section>
+                <div class="drafts-link-row">
+                    <button type="button" onclick="openDrafts()" class="view-drafts-btn neon-btn">
+                        View Saved Drafts
+                    </button>
+                </div>
+            </div>
+        </section>
 
+        <!-- Reports / Analytics -->
+        <section id="reports" class="dash-section">
+            <h2>Reports / Analytics</h2>
+            <div class="section-box">
+                <p class="subtext">
+                    Published forms with responses are listed below. View analytics or download a PDF report.
+                </p>
+                <table class="dash-table">
+                    <thead>
+                        <tr>
+                            <th>Form ID</th>
+                            <th>Form Title</th>
+                            <th>Total Submissions</th>
+                            <th>Average Rating</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="reportsBody">
+                        <tr>
+                            <td colspan="5">Reports will appear here.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
 
-        <!-- Templates -->
-        <section id="templates" class="dash-section">
-            <h2>Templates</h2>
-            <div class="section-box">
-                <p class="subtext">Choose a template by domain and customize or use it directly.</p>
+        <!-- Settings -->
+        <section id="settings" class="dash-section">
+            <h2>Settings</h2>
+            <div class="section-box">
+                <h3>Admin Profile</h3>
+                <form class="settings-form">
+                    <input type="text" placeholder="Full Name">
+                    <input type="password" placeholder="New Password">
+                    <input type="password" placeholder="Confirm New Password">
+                    <button type="button">Update Profile</button>
+                </form>
 
+                <h3 style="margin-top: 25px;">Notification Settings</h3>
+                <form class="settings-form">
+                    <label>
+                        <input type="checkbox"> Email alert for new feedback
+                    </label>
+                    <label>
+                        <input type="checkbox"> Weekly summary report
+                    </label>
+                    <button type="button">Save Preferences</button>
+                </form>
+            </div>
+        </section>
 
-                <div class="templates-grid">
-                    <div class="template-card" title="Customize or use the inbuilt forms to collect unbiased feedbacks from students, parents, and teachers.">
-                        <h3>Schools</h3>
-                        <p>
-                            Design feedback forms for students, teachers, and parents to improve classroom experience,
-                            teaching quality, and infrastructure.
-                        </p>
-                        <button type="button" onclick="openSchoolTemplates()">Open School Templates</button>
-                    </div>
+        <!-- Help / Support -->
+        <section id="help" class="dash-section">
+            <h2>Help / Support</h2>
+            <div class="section-box">
+                <h3>Quick Guide</h3>
+                <ul class="simple-list">
+                    <li>Use "Feedbacks" tab to review submissions.</li>
+                    <li>Manage and update forms from "Form Management".</li>
+                    <li>Use "Reports" for analytics and exports.</li>
+                </ul>
 
+                <h3 style="margin-top: 20px;">Contact Support</h3>
+                <p class="subtext">For issues, contact: admin-support@example.com</p>
+            </div>
+        </section>
 
-                    <div class="template-card" title="Create course, faculty, and campus life feedbacks tailored for colleges and universities.">
-                        <h3>Colleges</h3>
-                        <p>
-                            Build forms for course feedback, faculty evaluation, campus facilities, and event reviews,
-                            focused on higher education environments.
-                        </p>
-                        <button type="button" onclick="openCollegeTemplates()">Open College Templates</button>
-                    </div>
-
-
-                    <div class="template-card" title="Use ready-made forms to gather anonymous feedback from employees and teams in corporate environments.">
-                        <h3>Corporates</h3>
-                        <p>
-                            Set up forms for employee satisfaction, manager review, team health checks, and
-                            workplace culture without revealing identities.
-                        </p>
-                        <button type="button" onclick="openCorporateTemplates()">Open Corporate Templates</button>
-                    </div>
-
-
-                    <div class="template-card" title="Collect citizen feedback on public services, schemes, and government offices with ready-to-use templates.">
-                        <h3>Government Services</h3>
-                        <p>
-                            Prepare forms to capture citizen opinions on public services, schemes,
-                            grievance redressal, and department performance.
-                        </p>
-                        <button type="button" onclick="openGovernmentTemplates()">Open Government Templates</button>
-                    </div>
-                </div>
-
-
-                <div class="drafts-link-row">
-                    <button type="button" onclick="openDrafts()" class="view-drafts-btn neon-btn">
-                        View Saved Drafts
-                    </button>
-                </div>
-            </div>
-        </section>
-
-
-        <!-- Reports / Analytics -->
-        <section id="reports" class="dash-section">
-            <h2>Reports / Analytics</h2>
-            <div class="section-box">
-                <p class="subtext">
-                    Published forms with responses are listed below. View analytics or download a PDF report.
-                </p>
-                <table class="dash-table">
-                    <thead>
-                        <tr>
-                            <th>Form ID</th>
-                            <th>Form Title</th>
-                            <th>Total Submissions</th>
-                            <th>Average Rating</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="reportsBody">
-                        <tr>
-                            <td colspan="5">Reports will appear here.</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </section>
-
-
-        <!-- Settings -->
-        <section id="settings" class="dash-section">
-            <h2>Settings</h2>
-            <div class="section-box">
-                <h3>Admin Profile</h3>
-                <form class="settings-form">
-                    <input type="text" placeholder="Full Name">
-                    <input type="password" placeholder="New Password">
-                    <input type="password" placeholder="Confirm New Password">
-                    <button type="button">Update Profile</button>
-                </form>
-
-
-                <h3 style="margin-top: 25px;">Notification Settings</h3>
-                <form class="settings-form">
-                    <label>
-                        <input type="checkbox"> Email alert for new feedback
-                    </label>
-                    <label>
-                        <input type="checkbox"> Weekly summary report
-                    </label>
-                    <button type="button">Save Preferences</button>
-                </form>
-            </div>
-        </section>
-
-
-        <!-- Help / Support -->
-        <section id="help" class="dash-section">
-            <h2>Help / Support</h2>
-            <div class="section-box">
-                <h3>Quick Guide</h3>
-                <ul class="simple-list">
-                    <li>Use "Feedbacks" tab to review submissions.</li>
-                    <li>Manage and update forms from "Form Management".</li>
-                    <li>Use "Reports" for analytics and exports.</li>
-                </ul>
-
-
-                <h3 style="margin-top: 20px;">Contact Support</h3>
-                <p class="subtext">For issues, contact: admin-support@example.com</p>
-            </div>
-        </section>
-
-
-        <!-- Logout -->
-        <section id="logout" class="dash-section">
-            <h2>Logout</h2>
-            <div class="section-box">
-                <p class="subtext">Click below to return to the login page.</p>
-                <button id="logoutBtn">Logout</button>
-            </div>
-        </section>
-    </main>
+        <!-- Logout -->
+        <section id="logout" class="dash-section">
+            <h2>Logout</h2>
+            <div class="section-box">
+                <p class="subtext">Click below to return to the login page.</p>
+                <button id="logoutBtn">Logout</button>
+            </div>
+        </section>
+    </main>
 </div>
-
 
 <script>
 const API_BASE = "https://web-production-315e.up.railway.app";
 
-
 const items = document.querySelectorAll('.sidebar-item');
 const sections = document.querySelectorAll('.dash-section');
 
-
 items.forEach(item => {
-    item.addEventListener('click', () => {
-        const target = item.getAttribute('data-section');
+    item.addEventListener('click', () => {
+        const target = item.getAttribute('data-section');
 
+        items.forEach(i => i.classList.remove('active'));
+        sections.forEach(sec => sec.classList.remove('active-section'));
 
-        items.forEach(i => i.classList.remove('active'));
-        sections.forEach(sec => sec.classList.remove('active-section'));
-
-
-        item.classList.add('active');
-        document.getElementById(target).classList.add('active-section');
-    });
+        item.classList.add('active');
+        document.getElementById(target).classList.add('active-section');
+    });
 });
-
 
 document.getElementById('logoutBtn').addEventListener('click', () => {
-    window.location.href = 'login.html';
+    window.location.href = 'login.html';
 });
 
-
 function openSchoolTemplates() {
-    window.location.href = "school-templates.html";
+    window.location.href = "school-templates.html";
 }
-
 
 function openCollegeTemplates() {
-    window.location.href = "college-templates.html";
+    window.location.href = "college-templates.html";
 }
-
 
 function openCorporateTemplates() {
-    window.location.href = "corporate-templates.html";
+    window.location.href = "corporate-templates.html";
 }
-
 
 function openGovernmentTemplates() {
-    window.location.href = "government-templates.html";
+    window.location.href = "government-templates.html";
 }
-
 
 function openDrafts() {
-    window.location.href = "drafts.html";
+    window.location.href = "drafts.html";
 }
-
 
 function openCreateForm() {
-    window.location.href = "create-form.html";
+    window.location.href = "create-form.html";
 }
-
 
 /* Open analytics page for a form */
 function openFormAnalytics(formId) {
-    window.location.href = `form-analytics.html?form_id=${formId}`;
+    window.location.href = `form-analytics.html?form_id=${formId}`;
 }
-
 
 /* Open feedback details page */
 function openFeedbackDetails(responseId) {
-    window.location.href = `feedback-details.html?response_id=${responseId}`;
+    window.location.href = `feedback-details.html?response_id=${responseId}`;
 }
-
 
 /* Download PDF report for a form */
 function downloadReportPdf(formId) {
-    window.location.href = `${API_BASE}/admin/reports/${formId}/pdf`;
+    window.location.href = `${API_BASE}/admin/reports/${formId}/pdf`;
 }
-
 
 /* Load forms summary for Forms tab and use to compute total feedbacks */
 async function loadFormsList() {
-    try {
-        const res = await fetch(`${API_BASE}/admin/forms-summary`);
-        const data = await res.json();
-        const tbody = document.getElementById("formsBody");
-        tbody.innerHTML = "";
+    try {
+        const res = await fetch(`${API_BASE}/admin/forms-summary`);
+        const data = await res.json();
+        const tbody = document.getElementById("formsBody");
+        tbody.innerHTML = "";
 
+        if (!res.ok || !Array.isArray(data) || data.length === 0) {
+            const tr = document.createElement("tr");
+            const td = document.createElement("td");
+            td.colSpan = 5;
+            td.textContent = "No forms yet.";
+            tr.appendChild(td);
+            tbody.appendChild(tr);
+            document.getElementById("totalFeedbacks").textContent = 0;
+            return;
+        }
 
-        if (!res.ok || !Array.isArray(data) || data.length === 0) {
-            const tr = document.createElement("tr");
-            const td = document.createElement("td");
-            td.colSpan = 5;
-            td.textContent = "No forms yet.";
-            tr.appendChild(td);
-            tbody.appendChild(tr);
-            document.getElementById("totalFeedbacks").textContent = 0;
-            return;
-        }
+        let totalFeedbackCount = 0;
 
+        data.forEach(f => {
+            totalFeedbackCount += (f.submissions || 0);
 
-        let totalFeedbackCount = 0;
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+                <td>${f.id}</td>
+                <td>${f.name || "Untitled"}</td>
+                <td>${f.status}</td>
+                <td>${f.submissions || 0}</td>
+                <td>
+                    <button class="open-btn" type="button" onclick="openFormAnalytics(${f.id})">
+                        View Reports / Analytics
+                    </button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
 
-
-        data.forEach(f => {
-            totalFeedbackCount += (f.submissions || 0);
-
-
-            const tr = document.createElement("tr");
-            tr.innerHTML = `
-                <td>${f.id}</td>
-                <td>${f.name || "Untitled"}</td>
-                <td>${f.status}</td>
-                <td>${f.submissions || 0}</td>
-                <td>
-                    <button class="open-btn" type="button" onclick="openFormAnalytics(${f.id})">
-                        View Reports / Analytics
-                    </button>
-                </td>
-            `;
-            tbody.appendChild(tr);
-        });
-
-
-        document.getElementById("totalFeedbacks").textContent = totalFeedbackCount;
-    } catch (e) {
-        console.error("loadFormsList error:", e);
-    }
+        document.getElementById("totalFeedbacks").textContent = totalFeedbackCount;
+    } catch (e) {
+        console.error("loadFormsList error:", e);
+    }
 }
-
 
 /* Load recent submissions for home */
 async function loadRecentFeedbacks() {
-    try {
-        const res = await fetch(`${API_BASE}/admin/recent-feedbacks`);
-        const data = await res.json();
-        const tbody = document.getElementById("recentFeedbacksBody");
-        tbody.innerHTML = "";
+    try {
+        const res = await fetch(`${API_BASE}/admin/recent-feedbacks`);
+        const data = await res.json();
+        const tbody = document.getElementById("recentFeedbacksBody");
+        tbody.innerHTML = "";
 
+        if (!res.ok || !Array.isArray(data) || data.length === 0) {
+            const tr = document.createElement("tr");
+            const td = document.createElement("td");
+            td.colSpan = 5;
+            td.textContent = "No data yet.";
+            tr.appendChild(td);
+            tbody.appendChild(tr);
+            document.getElementById("pendingReviews").textContent = 0;
+            document.getElementById("flaggedFeedbacks").textContent = 0;
+            return;
+        }
 
-        if (!res.ok || !Array.isArray(data) || data.length === 0) {
-            const tr = document.createElement("tr");
-            const td = document.createElement("td");
-            td.colSpan = 5;
-            td.textContent = "No data yet.";
-            tr.appendChild(td);
-            tbody.appendChild(tr);
-            document.getElementById("pendingReviews").textContent = 0;
-            document.getElementById("flaggedFeedbacks").textContent = 0;
-            return;
-        }
+        let pendingCount = 0;
+        let flaggedCount = 0;
 
+        data.forEach(r => {
+            if ((r.overall_rating && r.overall_rating <= 2) || r.overall_sentiment === "negative") {
+                pendingCount += 1;
+                flaggedCount += 1;
+            }
 
-        let pendingCount = 0;
-        let flaggedCount = 0;
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+                <td>${r.id}</td>
+                <td>${r.submitted_at}</td>
+                <td>${r.form_name || ("Form " + r.form_template_id)}</td>
+                <td>${r.overall_rating}</td>
+                <td>${r.overall_sentiment}</td>
+            `;
+            tbody.appendChild(tr);
+        });
 
-
-        data.forEach(r => {
-            if ((r.overall_rating && r.overall_rating <= 2) || r.overall_sentiment === "negative") {
-                pendingCount += 1;
-                flaggedCount += 1;
-            }
-
-
-            const tr = document.createElement("tr");
-            tr.innerHTML = `
-                <td>${r.id}</td>
-                <td>${r.submitted_at}</td>
-                <td>${r.form_name || ("Form " + r.form_template_id)}</td>
-                <td>${r.overall_rating}</td>
-                <td>${r.overall_sentiment}</td>
-            `;
-            tbody.appendChild(tr);
-        });
-
-
-        document.getElementById("pendingReviews").textContent = pendingCount;
-        document.getElementById("flaggedFeedbacks").textContent = flaggedCount;
-    } catch (e) {
-        console.error("loadRecentFeedbacks error:", e);
-    }
+        document.getElementById("pendingReviews").textContent = pendingCount;
+        document.getElementById("flaggedFeedbacks").textContent = flaggedCount;
+    } catch (e) {
+        console.error("loadRecentFeedbacks error:", e);
+    }
 }
-
 
 /* Load all feedbacks for Feedbacks tab */
 async function loadAllFeedbacks(filters = {}) {
-    const params = new URLSearchParams();
-    if (filters.date) params.append("date", filters.date);
-    if (filters.form) params.append("form", filters.form);
-    if (filters.rating) params.append("rating", filters.rating);
+    const params = new URLSearchParams();
+    if (filters.date) params.append("date", filters.date);
+    if (filters.form) params.append("form", filters.form);
+    if (filters.rating) params.append("rating", filters.rating);
 
+    try {
+        const res = await fetch(`${API_BASE}/admin/all-feedbacks?` + params.toString());
+        const data = await res.json();
+        const tbody = document.getElementById("allFeedbacksBody");
+        tbody.innerHTML = "";
 
-    try {
-        const res = await fetch(`${API_BASE}/admin/all-feedbacks?` + params.toString());
-        const data = await res.json();
-        const tbody = document.getElementById("allFeedbacksBody");
-        tbody.innerHTML = "";
+        if (!res.ok || !Array.isArray(data) || data.length === 0) {
+            const tr = document.createElement("tr");
+            const td = document.createElement("td");
+            td.colSpan = 7;
+            td.textContent = "Feedback list will appear here.";
+            tr.appendChild(td);
+            tbody.appendChild(tr);
+            return;
+        }
 
+        data.forEach(r => {
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+                <td>${r.id}</td>
+                <td>${r.submitted_at}</td>
+                <td>${r.form_name || ("Form " + r.form_template_id)}</td>
+                <td>${r.overall_rating}</td>
+                <td>${r.overall_sentiment}</td>
+                <td>
+                    <button class="open-btn" type="button" onclick="openFormAnalytics(${r.form_template_id})">
+                        View Reports / Analytics
+                    </button>
+                </td>
+                <td class="actions-cell">
+                    <button class="dots-btn" type="button">⋮</button>
+                    <div class="dots-menu">
+                        <button type="button" data-action="view" data-id="${r.id}">View Response</button>
+                        <button type="button" data-action="save" data-id="${r.id}">Save for Reference</button>
+                        <button type="button" data-action="delete" data-id="${r.id}">Delete</button>
+                    </div>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
 
-        if (!res.ok || !Array.isArray(data) || data.length === 0) {
-            const tr = document.createElement("tr");
-            const td = document.createElement("td");
-            td.colSpan = 7;
-            td.textContent = "Feedback list will appear here.";
-            tr.appendChild(td);
-            tbody.appendChild(tr);
-            return;
-        }
-
-
-        data.forEach(r => {
-            const tr = document.createElement("tr");
-            tr.innerHTML = `
-                <td>${r.id}</td>
-                <td>${r.submitted_at}</td>
-                <td>${r.form_name || ("Form " + r.form_template_id)}</td>
-                <td>${r.overall_rating}</td>
-                <td>${r.overall_sentiment}</td>
-                <td>
-                    <button class="open-btn" type="button" onclick="openFormAnalytics(${r.form_template_id})">
-                        View Reports / Analytics
-                    </button>
-                </td>
-                <td class="actions-cell">
-                    <button class="dots-btn" type="button">⋮</button>
-                    <div class="dots-menu">
-                        <button type="button" data-action="view" data-id="${r.id}">View Response</button>
-                        <button type="button" data-action="save" data-id="${r.id}">Save for Reference</button>
-                        <button type="button" data-action="delete" data-id="${r.id}">Delete</button>
-                    </div>
-                </td>
-            `;
-            tbody.appendChild(tr);
-        });
-
-
-        attachDotsMenuHandlers();
-    } catch (e) {
-        console.error("loadAllFeedbacks error:", e);
-    }
+        attachDotsMenuHandlers();
+    } catch (e) {
+        console.error("loadAllFeedbacks error:", e);
+    }
 }
-
 
 /* Attach three-dots menu logic */
 function attachDotsMenuHandlers() {
-    const rows = document.querySelectorAll("#allFeedbacksBody tr");
-    rows.forEach(row => {
-        const dotsBtn = row.querySelector(".dots-btn");
-        const menu = row.querySelector(".dots-menu");
-        if (!dotsBtn || !menu) return;
+    const rows = document.querySelectorAll("#allFeedbacksBody tr");
+    rows.forEach(row => {
+        const dotsBtn = row.querySelector(".dots-btn");
+        const menu = row.querySelector(".dots-menu");
+        if (!dotsBtn || !menu) return;
 
+        dotsBtn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            closeAllDotsMenus();
+            menu.classList.toggle("open");
+        });
 
-        dotsBtn.addEventListener("click", (e) => {
-            e.stopPropagation();
-            closeAllDotsMenus();
-            menu.classList.toggle("open");
-        });
+        menu.querySelectorAll("button").forEach(btn => {
+            btn.addEventListener("click", async (e) => {
+                e.stopPropagation();
+                const action = btn.getAttribute("data-action");
+                const id = btn.getAttribute("data-id");
+                if (action === "view") {
+                    openFeedbackDetails(id);
+                } else if (action === "save") {
+                    await saveFeedback(id);
+                } else if (action === "delete") {
+                    await deleteFeedback(id);
+                }
+                menu.classList.remove("open");
+            });
+        });
+    });
 
-
-        menu.querySelectorAll("button").forEach(btn => {
-            btn.addEventListener("click", async (e) => {
-                e.stopPropagation();
-                const action = btn.getAttribute("data-action");
-                const id = btn.getAttribute("data-id");
-                if (action === "view") {
-                    openFeedbackDetails(id);
-                } else if (action === "save") {
-                    await saveFeedback(id);
-                } else if (action === "delete") {
-                    await deleteFeedback(id);
-                }
-                menu.classList.remove("open");
-            });
-        });
-    });
-
-
-    document.addEventListener("click", closeAllDotsMenus);
+    document.addEventListener("click", closeAllDotsMenus);
 }
-
 
 function closeAllDotsMenus() {
-    document.querySelectorAll(".dots-menu.open").forEach(m => m.classList.remove("open"));
+    document.querySelectorAll(".dots-menu.open").forEach(m => m.classList.remove("open"));
 }
-
 
 async function saveFeedback(responseId) {
-    if (!confirm("Mark this response as saved for future reference?")) return;
-    try {
-        const res = await fetch(`${API_BASE}/admin/feedback/${responseId}/save`, {
-            method: "POST"
-        });
-        const data = await res.json();
-        if (!res.ok) {
-            alert(data.error || "Failed to save response");
-            return;
-        }
-        alert("Response marked as saved.");
-        const date = document.getElementById("filterDate").value;
-        const form = document.getElementById("filterForm").value.trim();
-        const rating = document.getElementById("filterRating").value;
-        loadAllFeedbacks({ date, form, rating });
-    } catch (e) {
-        console.error("saveFeedback error:", e);
-    }
+    if (!confirm("Mark this response as saved for future reference?")) return;
+    try {
+        const res = await fetch(`${API_BASE}/admin/feedback/${responseId}/save`, {
+            method: "POST"
+        });
+        const data = await res.json();
+        if (!res.ok) {
+            alert(data.error || "Failed to save response");
+            return;
+        }
+        alert("Response marked as saved.");
+        const date = document.getElementById("filterDate").value;
+        const form = document.getElementById("filterForm").value.trim();
+        const rating = document.getElementById("filterRating").value;
+        loadAllFeedbacks({ date, form, rating });
+    } catch (e) {
+        console.error("saveFeedback error:", e);
+    }
 }
-
 
 async function deleteFeedback(responseId) {
-    if (!confirm("Delete this response permanently? This cannot be undone.")) return;
-    try {
-        const res = await fetch(`${API_BASE}/admin/feedback/${responseId}/delete`, {
-            method: "POST"
-        });
-        const data = await res.json();
-        if (!res.ok) {
-            alert(data.error || "Failed to delete response");
-            return;
-        }
-        alert("Response deleted.");
-        const date = document.getElementById("filterDate").value;
-        const form = document.getElementById("filterForm").value.trim();
-        const rating = document.getElementById("filterRating").value;
-        loadAllFeedbacks({ date, form, rating });
-        loadRecentFeedbacks();
-        loadFormsList();
-        loadUsersSummary();
-    } catch (e) {
-        console.error("deleteFeedback error:", e);
-    }
+    if (!confirm("Delete this response permanently? This cannot be undone.")) return;
+    try {
+        const res = await fetch(`${API_BASE}/admin/feedback/${responseId}/delete`, {
+            method: "POST"
+        });
+        const data = await res.json();
+        if (!res.ok) {
+            alert(data.error || "Failed to delete response");
+            return;
+        }
+        alert("Response deleted.");
+        const date = document.getElementById("filterDate").value;
+        const form = document.getElementById("filterForm").value.trim();
+        const rating = document.getElementById("filterRating").value;
+        loadAllFeedbacks({ date, form, rating });
+        loadRecentFeedbacks();
+        loadFormsList();
+        loadUsersSummary();
+    } catch (e) {
+        console.error("deleteFeedback error:", e);
+    }
 }
-
 
 /* Load anonymous users summary for Users tab */
 async function loadUsersSummary() {
-    try {
-        const res = await fetch(`${API_BASE}/admin/users-summary`);
-        const data = await res.json();
-        const tbody = document.getElementById("usersBody");
-        tbody.innerHTML = "";
+    try {
+        const res = await fetch(`${API_BASE}/admin/users-summary`);
+        const data = await res.json();
+        const tbody = document.getElementById("usersBody");
+        tbody.innerHTML = "";
 
+        if (!res.ok || !Array.isArray(data) || data.length === 0) {
+            const tr = document.createElement("tr");
+            const td = document.createElement("td");
+            td.colSpan = 3;
+            td.textContent = "User summary will appear here.";
+            tr.appendChild(td);
+            tbody.appendChild(tr);
+            return;
+        }
 
-        if (!res.ok || !Array.isArray(data) || data.length === 0) {
-            const tr = document.createElement("tr");
-            const td = document.createElement("td");
-            td.colSpan = 3;
-            td.textContent = "User summary will appear here.";
-            tr.appendChild(td);
-            tbody.appendChild(tr);
-            return;
-        }
-
-
-        data.forEach(u => {
-            const tr = document.createElement("tr");
-            tr.innerHTML = `
-                <td>${u.client_ip_hash}</td>
-                <td>${u.total_submissions}</td>
-                <td>${u.last_submission}</td>
-            `;
-            tbody.appendChild(tr);
-        });
-    } catch (e) {
-        console.error("loadUsersSummary error:", e);
-    }
+        data.forEach(u => {
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+                <td>${u.client_ip_hash}</td>
+                <td>${u.total_submissions}</td>
+                <td>${u.last_submission}</td>
+            `;
+            tbody.appendChild(tr);
+        });
+    } catch (e) {
+        console.error("loadUsersSummary error:", e);
+    }
 }
-
 
 /* Load reports list (published forms with responses) */
 async function loadReportsList() {
-    try {
-        const res = await fetch(`${API_BASE}/admin/reports/forms`);
-        const data = await res.json();
-        const tbody = document.getElementById("reportsBody");
-        tbody.innerHTML = "";
+    try {
+        const res = await fetch(`${API_BASE}/admin/reports/forms`);
+        const data = await res.json();
+        const tbody = document.getElementById("reportsBody");
+        tbody.innerHTML = "";
 
+        if (!res.ok || !Array.isArray(data) || data.length === 0) {
+            const tr = document.createElement("tr");
+            const td = document.createElement("td");
+            td.colSpan = 5;
+            td.textContent = "Reports will appear here.";
+            tr.appendChild(td);
+            tbody.appendChild(tr);
+            return;
+        }
 
-        if (!res.ok || !Array.isArray(data) || data.length === 0) {
-            const tr = document.createElement("tr");
-            const td = document.createElement("td");
-            td.colSpan = 5;
-            td.textContent = "Reports will appear here.";
-            tr.appendChild(td);
-            tbody.appendChild(tr);
-            return;
-        }
-
-
-        data.forEach(f => {
-            const tr = document.createElement("tr");
-            tr.innerHTML = `
-                <td>${f.id}</td>
-                <td>${f.name || "Untitled"}</td>
-                <td>${f.total_submissions || 0}</td>
-                <td>${f.avg_rating != null ? f.avg_rating.toFixed(2) : "0.00"}</td>
-                <td>
-                    <button class="open-btn" type="button" onclick="openFormAnalytics(${f.id})">
-                        View Analytics
-                    </button>
-                    <button class="open-btn" type="button" onclick="downloadReportPdf(${f.id})" style="margin-left:8px;">
-                        Download PDF
-                    </button>
-                </td>
-            `;
-            tbody.appendChild(tr);
-        });
-    } catch (e) {
-        console.error("loadReportsList error:", e);
-    }
+        data.forEach(f => {
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+                <td>${f.id}</td>
+                <td>${f.name || "Untitled"}</td>
+                <td>${f.total_submissions || 0}</td>
+                <td>${f.avg_rating != null ? f.avg_rating.toFixed(2) : "0.00"}</td>
+                <td>
+                    <button class="open-btn" type="button" onclick="openFormAnalytics(${f.id})">
+                        View Analytics
+                    </button>
+                    <button class="open-btn" type="button" onclick="downloadReportPdf(${f.id})" style="margin-left:8px;">
+                        Download PDF
+                    </button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+    } catch (e) {
+        console.error("loadReportsList error:", e);
+    }
 }
-
 
 /* Filter button */
 document.getElementById("applyFeedbackFilterBtn").addEventListener("click", () => {
-    const date = document.getElementById("filterDate").value;
-    const form = document.getElementById("filterForm").value.trim();
-    const rating = document.getElementById("filterRating").value;
-    loadAllFeedbacks({ date, form, rating });
+    const date = document.getElementById("filterDate").value;
+    const form = document.getElementById("filterForm").value.trim();
+    const rating = document.getElementById("filterRating").value;
+    loadAllFeedbacks({ date, form, rating });
 });
-
 
 /* Initial loads */
 loadFormsList();
@@ -734,7 +666,6 @@ loadAllFeedbacks();
 loadUsersSummary();
 loadReportsList();
 </script>
-
 
 </body>
 </html>
