@@ -105,6 +105,8 @@
             max-width: 900px;
             display: flex;
             justify-content: flex-start;
+            gap: 10px; /* allow two buttons side by side */
+            flex-wrap: wrap;
         }
 
         .back-link-row .secondary-btn {
@@ -119,6 +121,20 @@
 
         .back-link-row .secondary-btn:hover {
             box-shadow: 0 0 10px #ff0066;
+        }
+
+        .back-link-row .primary-btn {
+            padding: 8px 14px;
+            border-radius: 6px;
+            border: none;
+            font-weight: bold;
+            cursor: pointer;
+            background: #00ff99;
+            color: #000000;
+        }
+
+        .back-link-row .primary-btn:hover {
+            box-shadow: 0 0 10px #00ff99;
         }
 
         @media (max-width: 768px) {
@@ -191,6 +207,8 @@
 
     <div class="back-link-row">
         <button class="secondary-btn" type="button" onclick="goBackToDashboard()">← Back to Dashboard</button>
+        <!-- New: PDF report button using existing backend route -->
+        <button class="primary-btn" type="button" onclick="downloadPdfReport()">Download PDF Report</button>
     </div>
 </section>
 
@@ -214,6 +232,16 @@ const saveEstimateBtn = document.getElementById("saveEstimateBtn");
 
 function goBackToDashboard() {
     window.location.href = "admin-dashboard.html";
+}
+
+/* New: open existing PDF route in new tab */
+function downloadPdfReport() {
+    if (!formId) {
+        alert("Invalid form id for report.");
+        return;
+    }
+    const url = `${API_BASE}/admin/reports/${formId}/pdf`;
+    window.open(url, "_blank");
 }
 
 /* Helper to create an animated bar row.
