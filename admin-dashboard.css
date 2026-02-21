@@ -40,3 +40,28 @@
         .dash-table td.actions-cell {
             white-space: nowrap;
         }
+/* === Fix top Reports bulk three-dots menu alignment === */
+.reports-bulk-actions {
+    position: relative;          /* anchor menu to this container */
+    display: inline-block;
+}
+
+.actions-cell {
+    position: relative;          /* anchor row menus to the cell */
+}
+
+.dots-menu {
+    position: absolute;
+    top: 100%;                   /* appear just under the ⋮ button */
+    right: 0;
+    z-index: 1000;               /* above navbar and table */
+    background: rgba(0, 0, 0, 0.9);
+    border-radius: 8px;
+    padding: 6px 0;
+    min-width: 220px;
+    display: none;               /* hidden until .open added */
+}
+
+.dots-menu.open {
+    display: block;
+}
