@@ -5,6 +5,13 @@
     <title>Published Forms</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="drafts.css">
+    <link rel="stylesheet" href="admin-home.css">
+    <link rel="stylesheet" href="admin-dashboard.css">
+    <style>
+        .page-container {
+            margin-top: 80px; /* push content below fixed navbar */
+        }
+    </style>
 </head>
 <body>
 
@@ -55,13 +62,16 @@ function goBackToDashboard() {
 async function loadPublishedForms(domain = "") {
     const params = new URLSearchParams();
     if (domain) params.append("domain", domain);
-    params.append("status", "final");
-    params.append("is_published", "true");
 
     try {
         const res = await fetch(`${API_BASE}/admin/published-forms?` + params.toString());
+        if (!res.ok) {
+            console.error("API error", res.status);
+            listContainer.innerHTML = "<p>Failed to load published forms.</p>";
+            return;
+        }
         const data = await res.json();
-        renderPublishedForms(Array.isArray(data) ? data : (data.templates || []));
+        renderPublishedForms(Array.isArray(data) ? data : []);
     } catch (e) {
         console.error("Failed to load published forms", e);
         listContainer.innerHTML = "<p>Failed to load published forms.</p>";
@@ -77,13 +87,15 @@ function renderPublishedForms(items) {
     }
 
     items.forEach(t => {
+        const publicUrl = `public-form.html?id=${t.id}`;
+
         const card = document.createElement("div");
         card.className = "draft-card";
         card.innerHTML = `
             <h3>${t.name || "Untitled Form"}</h3>
             <p class="subtext">Domain: ${t.domain || "-"}</p>
-            <p>Status: ${t.status || "final"}</p>
-            <p>Public link: <a href="${t.public_url}" target="_blank">${t.public_url}</a></p>
+            <p>Status: ${t.status || "published"}</p>
+            <p>Public link: <a href="${publicUrl}" target="_blank">${publicUrl}</a></p>
         `;
         listContainer.appendChild(card);
     });
