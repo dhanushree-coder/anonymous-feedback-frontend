@@ -19,29 +19,47 @@
     <div class="logo">Anonymous Feedback System - Published Forms</div>
 </nav>
 
-<div class="page-container">
-    <header class="page-header">
+<div class="drafts-container">
+    <header class="drafts-header">
         <h2>Published Forms</h2>
         <p class="subtext">
-            These forms are published and have shareable links.
+            These forms are published and have shareable links for collecting anonymous feedback.
         </p>
         <button class="back-btn" onclick="goBackToDashboard()">← Back to Dashboard</button>
     </header>
 
-    <section class="filters-row">
-        <select id="domainFilter">
-            <option value="">All Domains</option>
-            <option value="school">School</option>
-            <option value="college">College</option>
-            <option value="corporate">Corporate</option>
-            <option value="government">Government</option>
-        </select>
+    <section class="section-box" style="margin-bottom: 15px;">
+        <div class="drafts-filters">
+            <label for="domainFilter" class="subtext">Filter by domain:</label>
+            <select id="domainFilter">
+                <option value="">All Domains</option>
+                <option value="school">School</option>
+                <option value="college">College</option>
+                <option value="corporate">Corporate</option>
+                <option value="government">Government</option>
+            </select>
+        </div>
     </section>
 
-    <section class="list-section">
-        <div id="publishedList" class="drafts-list">
-            <!-- cards injected by JS -->
-        </div>
+    <section class="section-box drafts-list-section">
+        <h3>Published Forms List</h3>
+        <table class="dash-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Domain</th>
+                    <th>Form Name</th>
+                    <th>Status</th>
+                    <th>Updated At</th>
+                    <th>Public Link</th>
+                </tr>
+            </thead>
+            <tbody id="publishedTableBody">
+                <tr>
+                    <td colspan="6">Loading published forms...</td>
+                </tr>
+            </tbody>
+        </table>
     </section>
 </div>
 
@@ -49,7 +67,7 @@
 const API_BASE = "https://web-production-315e.up.railway.app";
 
 const domainFilter = document.getElementById('domainFilter');
-const listContainer = document.getElementById('publishedList');
+const tableBody = document.getElementById('publishedTableBody');
 
 domainFilter.addEventListener('change', () => {
     loadPublishedForms(domainFilter.value);
@@ -63,41 +81,77 @@ async function loadPublishedForms(domain = "") {
     const params = new URLSearchParams();
     if (domain) params.append("domain", domain);
 
+    tableBody.innerHTML = `
+        <tr>
+            <td colspan="6">Loading published forms...</td>
+        </tr>
+    `;
+
     try {
         const res = await fetch(`${API_BASE}/admin/published-forms?` + params.toString());
         if (!res.ok) {
             console.error("API error", res.status);
-            listContainer.innerHTML = "<p>Failed to load published forms.</p>";
+            tableBody.innerHTML = `
+                <tr>
+                    <td colspan="6">Failed to load published forms.</td>
+                </tr>
+            `;
             return;
         }
         const data = await res.json();
-        renderPublishedForms(Array.isArray(data) ? data : []);
+        renderPublishedTable(Array.isArray(data) ? data : []);
     } catch (e) {
         console.error("Failed to load published forms", e);
-        listContainer.innerHTML = "<p>Failed to load published forms.</p>";
+        tableBody.innerHTML = `
+            <tr>
+                <td colspan="6">Failed to load published forms.</td>
+            </tr>
+        `;
     }
 }
 
-function renderPublishedForms(items) {
-    listContainer.innerHTML = "";
-
+function renderPublishedTable(items) {
     if (!items.length) {
-        listContainer.innerHTML = "<p>No published forms yet.</p>";
+        tableBody.innerHTML = `
+            <tr>
+                <td colspan="6">No published forms yet.</td>
+            </tr>
+        `;
         return;
     }
 
-    items.forEach(t => {
-        const publicUrl = `public-form.html?id=${t.id}`;
+    tableBody.innerHTML = "";
 
-        const card = document.createElement("div");
-        card.className = "draft-card";
-        card.innerHTML = `
-            <h3>${t.name || "Untitled Form"}</h3>
-            <p class="subtext">Domain: ${t.domain || "-"}</p>
-            <p>Status: ${t.status || "published"}</p>
-            <p>Public link: <a href="${publicUrl}" target="_blank">${publicUrl}</a></p>
-        `;
-        listContainer.appendChild(card);
+    items.forEach(t => {
+        const tr = document.createElement("tr");
+
+        const tdId = document.createElement("td");
+        tdId.textContent = t.id;
+
+        const tdDomain = document.createElement("td");
+        tdDomain.textContent = t.domain || "-";
+
+        const tdName = document.createElement("td");
+        tdName.textContent = t.name || "Untitled Form";
+
+        const tdStatus = document.createElement("td");
+        tdStatus.textContent = t.status || "published";
+
+        const tdUpdated = document.createElement("td");
+        tdUpdated.textContent = t.updated_at || "-";
+
+        const tdLink = document.createElement("td");
+        const publicUrl = `public-form.html?id=${t.id}`;
+        tdLink.innerHTML = `<a href="${publicUrl}" target="_blank">${publicUrl}</a>`;
+
+        tr.appendChild(tdId);
+        tr.appendChild(tdDomain);
+        tr.appendChild(tdName);
+        tr.appendChild(tdStatus);
+        tr.appendChild(tdUpdated);
+        tr.appendChild(tdLink);
+
+        tableBody.appendChild(tr);
     });
 }
 
