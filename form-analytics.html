@@ -207,8 +207,8 @@
 
     <div class="back-link-row">
         <button class="secondary-btn" type="button" onclick="goBackToDashboard()">← Back to Dashboard</button>
-        <!-- New: PDF report button using existing backend route -->
-        <button class="primary-btn" type="button" onclick="downloadPdfReport()">Download PDF Report</button>
+        <!-- CSV report button (PDF removed) -->
+        <button class="primary-btn" type="button" id="downloadCsvBtn">Download CSV Report</button>
     </div>
 </section>
 
@@ -229,23 +229,21 @@ const estimateBars = document.getElementById("estimateBars");
 const keywordsList = document.getElementById("keywordsList");
 const sectionBars = document.getElementById("sectionBars");
 const saveEstimateBtn = document.getElementById("saveEstimateBtn");
+const downloadCsvBtn = document.getElementById("downloadCsvBtn");
 
 function goBackToDashboard() {
     window.location.href = "admin-dashboard.html";
 }
 
-/* New: open existing PDF route in new tab */
-function downloadPdfReport() {
-    if (!formId) {
-        alert("Invalid form id for report.");
-        return;
-    }
-    const url = `${API_BASE}/admin/reports/${formId}/pdf`;
-    window.open(url, "_blank");
+/* CSV report download (new, replaces PDF) */
+if (downloadCsvBtn && formId) {
+    downloadCsvBtn.addEventListener("click", () => {
+        const url = `${API_BASE}/admin/reports/${formId}/csv`;
+        window.open(url, "_blank");
+    });
 }
 
-/* Helper to create an animated bar row.
-   We reset width and opacity first, then animate like your skill bars. */
+/* Helper to create an animated bar row. */
 function createBarRow(label, value, maxValue, isNegative = false) {
     const row = document.createElement("div");
     row.className = "bar-row";
@@ -272,15 +270,12 @@ function createBarRow(label, value, maxValue, isNegative = false) {
 
     const pct = maxValue > 0 ? (value / maxValue) * 100 : 0;
 
-    // Record target width so we can re‑animate later
     fill.setAttribute("data-target-width", pct + "%");
 
-    // Start from 0 like portfolio skill progress
     fill.style.width = "0%";
     fill.style.opacity = "0";
 
     requestAnimationFrame(() => {
-        // next frame – trigger smooth transition
         fill.style.opacity = "1";
         fill.style.width = pct + "%";
     });
@@ -288,7 +283,7 @@ function createBarRow(label, value, maxValue, isNegative = false) {
     return row;
 }
 
-/* Re‑animate all bars inside a given container (used when slide becomes active) */
+/* Re‑animate all bars inside a given container */
 function reanimateBarsIn(container) {
     const fills = container.querySelectorAll(".bar-fill");
     fills.forEach(fill => {
@@ -297,7 +292,6 @@ function reanimateBarsIn(container) {
         fill.style.transition = "none";
         fill.style.width = "0%";
         fill.style.opacity = "0";
-        // force reflow
         void fill.offsetWidth;
         fill.style.transition = "width 1s ease-in-out, opacity 0.5s ease-in-out";
         requestAnimationFrame(() => {
@@ -331,7 +325,6 @@ async function loadSummary() {
         const maxSent = Math.max(data.positives || 0, data.negatives || 0, 1);
         const posRow = createBarRow("Positive", data.positives || 0, maxSent, false);
         const negRow = createBarRow("Negative", data.negatives || 0, maxSent, true);
-
         sentimentBars.appendChild(posRow);
         sentimentBars.appendChild(negRow);
 
@@ -346,11 +339,10 @@ async function loadSummary() {
         /* Failed attempts */
         failedAttemptsStats.textContent = `Approximate blocked attempts: ${data.blocked_attempts || 0}`;
 
-        /* Blocked IP hashes list (from blocked_feedback_attempts) */
+        /* Blocked IP hashes list */
         blockedIpsList.innerHTML = "";
         (data.blocked_ips || []).forEach(item => {
             const li = document.createElement("li");
-            // Show hashed IP + count + reasons (no real IPs exposed)
             li.textContent = `• ${item.client_ip_hash} → ${item.attempts} blocked (${item.reasons})`;
             blockedIpsList.appendChild(li);
         });
@@ -369,7 +361,6 @@ async function loadSummary() {
         const maxEA = Math.max(est, act, 1);
         const estRow = createBarRow("Estimated", est, maxEA, false);
         const actRow = createBarRow("Actual", act, maxEA, true);
-
         estimateBars.appendChild(estRow);
         estimateBars.appendChild(actRow);
 
@@ -456,7 +447,6 @@ function showSlide(index) {
         behavior: "smooth"
     });
 
-    // Re‑animate bars only for the visible slide
     const activeSlide = slides[currentIndex];
     const barContainers = activeSlide.querySelectorAll(".bar-chart");
     barContainers.forEach(container => reanimateBarsIn(container));
@@ -500,7 +490,7 @@ function resetAutoSlide() {
     startAutoSlide();
 }
 
-/* Initial load: data then carousel start so layout is stable */
+/* Initial load */
 document.addEventListener("DOMContentLoaded", async () => {
     await loadSummary();
     await loadPatterns();
