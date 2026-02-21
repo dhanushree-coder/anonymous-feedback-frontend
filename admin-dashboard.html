@@ -214,12 +214,30 @@
         <section id="reports" class="dash-section">
             <h2>Reports / Analytics</h2>
             <div class="section-box">
-                <p class="subtext">
-                    Published forms with responses are listed below. View analytics or download a CSV report.
-                </p>
+                <div class="reports-header-row">
+                    <p class="subtext">
+                        Published forms with responses are listed below. View analytics or export CSV reports.
+                    </p>
+                    <!-- Top three-dots bulk menu -->
+                    <div class="reports-bulk-actions">
+                        <button type="button" class="dots-btn" id="reportsBulkDotsBtn">⋮</button>
+                        <div class="dots-menu" id="reportsBulkMenu">
+                            <button type="button" data-action="download-all">Download all forms (CSV)</button>
+                            <button type="button" data-action="download-all-positive">Download all positive feedbacks</button>
+                            <button type="button" data-action="download-all-negative">Download all negative feedbacks</button>
+                            <button type="button" data-action="download-selected">Download selected forms</button>
+                            <button type="button" data-action="download-selected-positive">Download selected forms (positive only)</button>
+                            <button type="button" data-action="download-selected-negative">Download selected forms (negative only)</button>
+                        </div>
+                    </div>
+                </div>
+
                 <table class="dash-table">
                     <thead>
                         <tr>
+                            <th>
+                                <input type="checkbox" id="selectAllReports">
+                            </th>
                             <th>Form ID</th>
                             <th>Form Title</th>
                             <th>Total Submissions</th>
@@ -229,7 +247,7 @@
                     </thead>
                     <tbody id="reportsBody">
                         <tr>
-                            <td colspan="5">Reports will appear here.</td>
+                            <td colspan="6">Reports will appear here.</td>
                         </tr>
                     </tbody>
                 </table>
@@ -344,9 +362,47 @@ function openFeedbackDetails(responseId) {
     window.location.href = `feedback-details.html?response_id=${responseId}`;
 }
 
-/* CSV report for a form (replaces PDF in UI) */
-function downloadReportCsv(formId) {
-    window.open(`${API_BASE}/admin/reports/${formId}/csv`, "_blank");
+/* CSV report for a single form (all responses) */
+function downloadReportCsv(formId, sentiment = null) {
+    let url = `${API_BASE}/admin/reports/${formId}/csv`;
+    if (sentiment) {
+        url += `?sentiment=${encodeURIComponent(sentiment)}`;
+    }
+    window.open(url, "_blank");
+}
+
+/* Helpers for bulk CSV */
+function downloadAllFormsCsv(sentiment = null) {
+    let url = `${API_BASE}/admin/reports/csv/all`;
+    if (sentiment) {
+        url += `?sentiment=${encodeURIComponent(sentiment)}`;
+    }
+    window.open(url, "_blank");
+}
+
+function getSelectedFormIds() {
+    const checkboxes = document.querySelectorAll('.report-select-checkbox:checked');
+    const ids = [];
+    checkboxes.forEach(cb => {
+        const id = cb.getAttribute('data-form-id');
+        if (id) ids.push(id);
+    });
+    return ids;
+}
+
+function downloadSelectedFormsCsv(sentiment = null) {
+    const ids = getSelectedFormIds();
+    if (ids.length === 0) {
+        alert("Please select at least one form.");
+        return;
+    }
+    const params = new URLSearchParams();
+    params.append("form_ids", ids.join(","));
+    if (sentiment) {
+        params.append("sentiment", sentiment);
+    }
+    const url = `${API_BASE}/admin/reports/csv/by-forms?` + params.toString();
+    window.open(url, "_blank");
 }
 
 /* Load forms summary for Forms tab and use to compute total feedbacks */
@@ -495,7 +551,7 @@ async function loadAllFeedbacks(filters = {}) {
     }
 }
 
-/* Attach three-dots menu logic */
+/* Attach three-dots menu logic for Feedbacks tab */
 function attachDotsMenuHandlers() {
     const rows = document.querySelectorAll("#allFeedbacksBody tr");
     rows.forEach(row => {
@@ -621,7 +677,7 @@ async function loadReportsList() {
         if (!res.ok || !Array.isArray(data) || data.length === 0) {
             const tr = document.createElement("tr");
             const td = document.createElement("td");
-            td.colSpan = 5;
+            td.colSpan = 6;
             td.textContent = "Reports will appear here.";
             tr.appendChild(td);
             tbody.appendChild(tr);
@@ -631,27 +687,122 @@ async function loadReportsList() {
         data.forEach(f => {
             const tr = document.createElement("tr");
             tr.innerHTML = `
+                <td>
+                    <input type="checkbox" class="report-select-checkbox" data-form-id="${f.id}">
+                </td>
                 <td>${f.id}</td>
                 <td>${f.name || "Untitled"}</td>
                 <td>${f.total_submissions || 0}</td>
                 <td>${f.avg_rating != null ? f.avg_rating.toFixed(2) : "0.00"}</td>
-                <td>
+                <td class="actions-cell">
                     <button class="open-btn" type="button" onclick="openFormAnalytics(${f.id})">
                         View Analytics
                     </button>
-                    <button class="open-btn" type="button" onclick="downloadReportCsv(${f.id})" style="margin-left:8px;">
-                        Download CSV
-                    </button>
+                    <button class="dots-btn" type="button">⋮</button>
+                    <div class="dots-menu">
+                        <button type="button" data-action="csv-all" data-form-id="${f.id}">Download all responses (CSV)</button>
+                        <button type="button" data-action="csv-positive" data-form-id="${f.id}">Download positive feedbacks</button>
+                        <button type="button" data-action="csv-negative" data-form-id="${f.id}">Download negative feedbacks</button>
+                        <button type="button" data-action="select-form" data-form-id="${f.id}">Select this form for bulk export</button>
+                    </div>
                 </td>
             `;
             tbody.appendChild(tr);
         });
+
+        attachReportsDotsHandlers();
+        attachSelectAllReportsHandler();
     } catch (e) {
         console.error("loadReportsList error:", e);
     }
 }
 
-/* Filter button */
+/* Three-dots per-form menu in Reports tab */
+function attachReportsDotsHandlers() {
+    const rows = document.querySelectorAll("#reportsBody tr");
+    rows.forEach(row => {
+        const dotsBtn = row.querySelector(".actions-cell .dots-btn");
+        const menu = row.querySelector(".actions-cell .dots-menu");
+        if (!dotsBtn || !menu) return;
+
+        dotsBtn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            closeAllDotsMenus();
+            menu.classList.toggle("open");
+        });
+
+        menu.querySelectorAll("button").forEach(btn => {
+            btn.addEventListener("click", (e) => {
+                e.stopPropagation();
+                const action = btn.getAttribute("data-action");
+                const formId = btn.getAttribute("data-form-id");
+                if (!formId) return;
+
+                if (action === "csv-all") {
+                    downloadReportCsv(formId);
+                } else if (action === "csv-positive") {
+                    downloadReportCsv(formId, "positive");
+                } else if (action === "csv-negative") {
+                    downloadReportCsv(formId, "negative");
+                } else if (action === "select-form") {
+                    const cb = document.querySelector(`.report-select-checkbox[data-form-id="${formId}"]`);
+                    if (cb) {
+                        cb.checked = true;
+                    }
+                }
+                menu.classList.remove("open");
+            });
+        });
+    });
+
+    // Bulk menu
+    const bulkBtn = document.getElementById("reportsBulkDotsBtn");
+    const bulkMenu = document.getElementById("reportsBulkMenu");
+    if (bulkBtn && bulkMenu) {
+        bulkBtn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            closeAllDotsMenus();
+            bulkMenu.classList.toggle("open");
+        });
+
+        bulkMenu.querySelectorAll("button").forEach(btn => {
+            btn.addEventListener("click", (e) => {
+                e.stopPropagation();
+                const action = btn.getAttribute("data-action");
+                if (action === "download-all") {
+                    downloadAllFormsCsv();
+                } else if (action === "download-all-positive") {
+                    downloadAllFormsCsv("positive");
+                } else if (action === "download-all-negative") {
+                    downloadAllFormsCsv("negative");
+                } else if (action === "download-selected") {
+                    downloadSelectedFormsCsv();
+                } else if (action === "download-selected-positive") {
+                    downloadSelectedFormsCsv("positive");
+                } else if (action === "download-selected-negative") {
+                    downloadSelectedFormsCsv("negative");
+                }
+                bulkMenu.classList.remove("open");
+            });
+        });
+    }
+
+    document.addEventListener("click", closeAllDotsMenus);
+}
+
+/* Select-all checkbox for Reports table */
+function attachSelectAllReportsHandler() {
+    const selectAll = document.getElementById("selectAllReports");
+    if (!selectAll) return;
+    selectAll.addEventListener("change", () => {
+        const checked = selectAll.checked;
+        document.querySelectorAll(".report-select-checkbox").forEach(cb => {
+            cb.checked = checked;
+        });
+    });
+}
+
+/* Filter button in Feedbacks tab */
 document.getElementById("applyFeedbackFilterBtn").addEventListener("click", () => {
     const date = document.getElementById("filterDate").value;
     const form = document.getElementById("filterForm").value.trim();
