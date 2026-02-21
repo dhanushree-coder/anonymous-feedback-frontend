@@ -168,6 +168,7 @@ function sentimentBadge(sentiment) {
 async function loadDetails() {
     if (!responseId) {
         detailsTitle.textContent = "Invalid response id";
+        detailsMeta.textContent = "";
         return;
     }
     try {
@@ -176,6 +177,9 @@ async function loadDetails() {
         if (!res.ok) {
             detailsTitle.textContent = "Unable to load feedback";
             detailsMeta.textContent = data.error || "Unknown error";
+            answersBody.innerHTML = `
+                <tr><td colspan="3">Failed to load answers.</td></tr>
+            `;
             return;
         }
 
@@ -184,7 +188,7 @@ async function loadDetails() {
 
         metaForm.textContent = `Form: ${data.form_name || ("Form " + data.form_template_id)} (ID: ${data.form_template_id})`;
         metaDate.textContent = `Submitted at: ${data.submitted_at}`;
-        metaRating.textContent = `Overall Rating: ${data.overall_rating}`;
+        metaRating.textContent = `Overall Rating: ${data.overall_rating != null ? data.overall_rating : "N/A"}`;
         metaSentiment.innerHTML = `Sentiment: ${sentimentBadge(data.overall_sentiment)}`;
         metaIpHash.textContent = `User IP Hash: ${data.client_ip_hash || "N/A"}`;
         metaSaved.textContent = `Saved for reference: ${data.saved_flag ? "Yes" : "No"}`;
@@ -211,6 +215,10 @@ async function loadDetails() {
         });
     } catch (e) {
         console.error("loadDetails error:", e);
+        detailsMeta.textContent = "Error while loading feedback.";
+        answersBody.innerHTML = `
+            <tr><td colspan="3">Error while loading answers.</td></tr>
+        `;
     }
 }
 

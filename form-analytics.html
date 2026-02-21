@@ -235,7 +235,7 @@ function goBackToDashboard() {
     window.location.href = "admin-dashboard.html";
 }
 
-/* CSV report download (new, replaces PDF) */
+/* CSV report download */
 if (downloadCsvBtn && formId) {
     downloadCsvBtn.addEventListener("click", () => {
         const url = `${API_BASE}/admin/reports/${formId}/csv`;
@@ -269,7 +269,6 @@ function createBarRow(label, value, maxValue, isNegative = false) {
     row.appendChild(val);
 
     const pct = maxValue > 0 ? (value / maxValue) * 100 : 0;
-
     fill.setAttribute("data-target-width", pct + "%");
 
     fill.style.width = "0%";
@@ -305,6 +304,7 @@ function reanimateBarsIn(container) {
 async function loadSummary() {
     if (!formId) {
         formTitleEl.textContent = "Invalid form id";
+        formMetaEl.textContent = "";
         return;
     }
 
@@ -318,46 +318,65 @@ async function loadSummary() {
         }
 
         formTitleEl.textContent = data.form_name || `Form ${formId}`;
-        formMetaEl.textContent = `Total submissions: ${data.total || 0} | Average rating: ${data.avg_rating || 0}`;
+        const total = data.total || 0;
+        const avg = data.avg_rating != null ? Number(data.avg_rating).toFixed(2) : "0.00";
+        formMetaEl.textContent = `Total submissions: ${total} | Average rating: ${avg}`;
 
         /* Sentiment bars */
         sentimentBars.innerHTML = "";
-        const maxSent = Math.max(data.positives || 0, data.negatives || 0, 1);
-        const posRow = createBarRow("Positive", data.positives || 0, maxSent, false);
-        const negRow = createBarRow("Negative", data.negatives || 0, maxSent, true);
+        const positives = data.positives || 0;
+        const negatives = data.negatives || 0;
+        const maxSent = Math.max(positives, negatives, 1);
+        const posRow = createBarRow("Positive", positives, maxSent, false);
+        const negRow = createBarRow("Negative", negatives, maxSent, true);
         sentimentBars.appendChild(posRow);
         sentimentBars.appendChild(negRow);
 
         /* Negative reasons list */
         negativeReasonsList.innerHTML = "";
-        (data.negative_reasons || []).forEach(item => {
+        const reasons = data.negative_reasons || [];
+        if (reasons.length === 0 && total === 0) {
             const li = document.createElement("li");
-            li.textContent = `• ${item.reason_text} (${item.count} times)`;
+            li.textContent = "No submissions yet.";
             negativeReasonsList.appendChild(li);
-        });
+        } else {
+            reasons.forEach(item => {
+                const li = document.createElement("li");
+                li.textContent = `• ${item.reason_text} (${item.count} times)`;
+                negativeReasonsList.appendChild(li);
+            });
+        }
 
         /* Failed attempts */
         failedAttemptsStats.textContent = `Approximate blocked attempts: ${data.blocked_attempts || 0}`;
 
         /* Blocked IP hashes list */
         blockedIpsList.innerHTML = "";
-        (data.blocked_ips || []).forEach(item => {
+        const blocked = data.blocked_ips || [];
+        if (blocked.length === 0) {
             const li = document.createElement("li");
-            li.textContent = `• ${item.client_ip_hash} → ${item.attempts} blocked (${item.reasons})`;
+            li.textContent = "No blocked IPs recorded for this form.";
             blockedIpsList.appendChild(li);
-        });
+        } else {
+            blocked.forEach(item => {
+                const li = document.createElement("li");
+                li.textContent = `• ${item.client_ip_hash} → ${item.attempts} blocked (${item.reasons})`;
+                blockedIpsList.appendChild(li);
+            });
+        }
 
         /* Estimate info & bars */
+        estimateBars.innerHTML = "";
+        const est = data.estimated_submissions || 0;
+        const act = total;
         if (data.estimated_submissions != null) {
             estimateInput.value = data.estimated_submissions;
-            estimateInfo.textContent = `Estimated: ${data.estimated_submissions}, Actual: ${data.total || 0}`;
+            estimateInfo.textContent = `Estimated: ${est}, Actual: ${act}`;
         } else {
+            estimateInput.value = "";
             estimateInfo.textContent = `No estimate saved yet. Enter a value and click Save Estimate.`;
         }
 
-        estimateBars.innerHTML = "";
-        const est = data.estimated_submissions || 0;
-        const act = data.total || 0;
         const maxEA = Math.max(est, act, 1);
         const estRow = createBarRow("Estimated", est, maxEA, false);
         const actRow = createBarRow("Actual", act, maxEA, true);
@@ -366,11 +385,13 @@ async function loadSummary() {
 
     } catch (e) {
         console.error("loadSummary error:", e);
+        formMetaEl.textContent = "Error while loading analytics.";
     }
 }
 
 /* Load keywords and section improvement areas */
 async function loadPatterns() {
+    if (!formId) return;
     try {
         const res = await fetch(`${API_BASE}/admin/form-analytics/patterns?form_id=${formId}`);
         const data = await res.json();
@@ -380,20 +401,33 @@ async function loadPatterns() {
 
         /* Keywords */
         keywordsList.innerHTML = "";
-        (data.keywords || []).forEach(k => {
+        const kws = data.keywords || [];
+        if (kws.length === 0) {
             const li = document.createElement("li");
-            li.textContent = `• "${k.word}" (${k.count} times)`;
+            li.textContent = "No specific keyword patterns detected yet.";
             keywordsList.appendChild(li);
-        });
+        } else {
+            kws.forEach(k => {
+                const li = document.createElement("li");
+                li.textContent = `• "${k.word}" (${k.count} times)`;
+                keywordsList.appendChild(li);
+            });
+        }
 
         /* Section improvement bars */
         sectionBars.innerHTML = "";
         const sections = data.sections || [];
-        const maxScore = Math.max(...sections.map(s => s.issue_score || 0), 1);
-        sections.forEach(s => {
-            const row = createBarRow(s.section_name || "Section", s.issue_score || 0, maxScore, true);
-            sectionBars.appendChild(row);
-        });
+        if (sections.length === 0) {
+            const li = document.createElement("li");
+            li.textContent = "No section-level issues detected yet.";
+            keywordsList.appendChild(li);
+        } else {
+            const maxScore = Math.max(...sections.map(s => s.issue_score || 0), 1);
+            sections.forEach(s => {
+                const row = createBarRow(s.section_name || "Section", s.issue_score || 0, maxScore, true);
+                sectionBars.appendChild(row);
+            });
+        }
     } catch (e) {
         console.error("loadPatterns error:", e);
     }
@@ -401,9 +435,13 @@ async function loadPatterns() {
 
 /* Save estimate */
 saveEstimateBtn.addEventListener("click", async () => {
+    if (!formId) {
+        alert("Invalid form id.");
+        return;
+    }
     const val = parseInt(estimateInput.value || "0", 10);
-    if (val < 0) {
-        alert("Estimate cannot be negative.");
+    if (isNaN(val) || val < 0) {
+        alert("Estimate must be a non-negative number.");
         return;
     }
 
@@ -421,6 +459,7 @@ saveEstimateBtn.addEventListener("click", async () => {
         await loadSummary();
     } catch (e) {
         console.error("saveEstimate error:", e);
+        alert("Error while saving estimate.");
     }
 });
 
