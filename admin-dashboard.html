@@ -215,7 +215,7 @@
             <h2>Reports / Analytics</h2>
             <div class="section-box">
                 <p class="subtext">
-                    Published forms with responses are listed below. View analytics or download a PDF report.
+                    Published forms with responses are listed below. View analytics or download a CSV report.
                 </p>
                 <table class="dash-table">
                     <thead>
@@ -344,9 +344,9 @@ function openFeedbackDetails(responseId) {
     window.location.href = `feedback-details.html?response_id=${responseId}`;
 }
 
-/* Download PDF report for a form */
-function downloadReportPdf(formId) {
-    window.location.href = `${API_BASE}/admin/reports/${formId}/pdf`;
+/* CSV report for a form (replaces PDF in UI) */
+function downloadReportCsv(formId) {
+    window.open(`${API_BASE}/admin/reports/${formId}/csv`, "_blank");
 }
 
 /* Load forms summary for Forms tab and use to compute total feedbacks */
@@ -639,8 +639,8 @@ async function loadReportsList() {
                     <button class="open-btn" type="button" onclick="openFormAnalytics(${f.id})">
                         View Analytics
                     </button>
-                    <button class="open-btn" type="button" onclick="downloadReportPdf(${f.id})" style="margin-left:8px;">
-                        Download PDF
+                    <button class="open-btn" type="button" onclick="downloadReportCsv(${f.id})" style="margin-left:8px;">
+                        Download CSV
                     </button>
                 </td>
             `;
@@ -666,6 +666,5 @@ loadAllFeedbacks();
 loadUsersSummary();
 loadReportsList();
 </script>
-
 </body>
 </html>
