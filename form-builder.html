@@ -48,9 +48,10 @@
         </div>
     </section>
 
+    <!-- ONLY THIS BUTTON BLOCK IS CHANGED (onclick targets saveForm) -->
     <section class="form-builder-actions">
-        <button class="secondary-btn" onclick="saveDraft()">Save Draft</button>
-        <button class="primary-btn" onclick="submitForm()">Submit Form</button>
+        <button class="secondary-btn" onclick="saveForm(true)">Save Draft</button>
+        <button class="primary-btn" onclick="saveForm(false)">Submit / Publish</button>
     </section>
 </div>
 
@@ -74,7 +75,7 @@ const formNameInput = document.getElementById('formName');
 /**
  * Facility-wise master question bank
  * Each entry has: text, type ("multiple" / "short" / "rating"), options[] (for multiple)
- * Questions are specific to each facility, minimum 25 per facility. [web:24][web:26][web:27]
+ * Questions are specific to each facility, minimum 25 per facility.
  */
 const facilityQuestionBank = {
     "Teaching Quality": [
@@ -339,7 +340,7 @@ async function initBuilder() {
         if (!config || !config.services || config.services.length === 0) {
             servicesContainer.innerHTML = "<p class='subtext'>No services selected. Please go back and choose templates.</p>";
         } else {
-            // For each selected service, attach a facility-specific question set (25+ questions each). [web:24][web:27]
+            // For each selected service, attach a facility-specific question set
             formState.services = config.services.map(serviceName => {
                 const bank = facilityQuestionBank[serviceName] || genericDefaultQuestionsTemplate;
                 // Deep clone to avoid reference issues when editing
@@ -563,36 +564,17 @@ ratingReason.addEventListener('input', () => {
     formState.ratingReason = ratingReason.value;
 });
 
-// Save Draft / Submit
-async function saveDraft() {
-    try {
-        const payload = { ...formState, status: "draft" };
-        const res = await fetch("https://web-production-315e.up.railway.app/save-form-template", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload)
-        });
-        const data = await res.json();
-        if (res.ok && data.id) {
-            formState.id = data.id;
-            alert("Draft saved successfully.");
-        } else {
-            alert(data.error || "Failed to save draft.");
-        }
-    } catch (e) {
-        console.error(e);
-        alert("Failed to save draft.");
-    }
-}
-
-async function submitForm() {
-    if (formState.overallRating === 0) {
+// SINGLE SAVE FUNCTION (replaces old saveDraft + submitForm)
+async function saveForm(isDraft) {
+    if (!isDraft && formState.overallRating === 0) {
         alert("Please set an overall rating before submitting.");
         return;
     }
 
+    const status = isDraft ? "draft" : "final";
+
     try {
-        const payload = { ...formState, status: "final" };
+        const payload = { ...formState, status: status };
         const res = await fetch("https://web-production-315e.up.railway.app/save-form-template", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -601,13 +583,13 @@ async function submitForm() {
         const data = await res.json();
         if (res.ok && data.id) {
             formState.id = data.id;
-            alert("Form template saved as final.");
+            alert(isDraft ? "Draft saved successfully." : "Form template saved as final.");
         } else {
-            alert(data.error || "Failed to submit form template.");
+            alert(data.error || "Failed to save form template.");
         }
     } catch (e) {
         console.error(e);
-        alert("Failed to submit form template.");
+        alert("Failed to save form template.");
     }
 }
 
