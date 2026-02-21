@@ -202,9 +202,14 @@
                     </div>
                 </div>
 
+                <!-- UPDATED: now two buttons -->
                 <div class="drafts-link-row">
                     <button type="button" onclick="openDrafts()" class="view-drafts-btn neon-btn">
                         View Saved Drafts
+                    </button>
+
+                    <button type="button" onclick="openPublished()" class="view-drafts-btn neon-btn">
+                        View Published Forms
                     </button>
                 </div>
             </div>
@@ -346,6 +351,11 @@ function openGovernmentTemplates() {
 
 function openDrafts() {
     window.location.href = "drafts.html";
+}
+
+/* NEW: navigate to published.html */
+function openPublished() {
+    window.location.href = "published.html";
 }
 
 function openCreateForm() {

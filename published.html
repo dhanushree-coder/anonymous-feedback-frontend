@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Published Forms</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="drafts.css">
+</head>
+<body>
+
+<nav class="navbar">
+    <div class="logo">Anonymous Feedback System - Published Forms</div>
+</nav>
+
+<div class="page-container">
+    <header class="page-header">
+        <h2>Published Forms</h2>
+        <p class="subtext">
+            These forms are published and have shareable links.
+        </p>
+        <button class="back-btn" onclick="goBackToDashboard()">← Back to Dashboard</button>
+    </header>
+
+    <section class="filters-row">
+        <select id="domainFilter">
+            <option value="">All Domains</option>
+            <option value="school">School</option>
+            <option value="college">College</option>
+            <option value="corporate">Corporate</option>
+            <option value="government">Government</option>
+        </select>
+    </section>
+
+    <section class="list-section">
+        <div id="publishedList" class="drafts-list">
+            <!-- cards injected by JS -->
+        </div>
+    </section>
+</div>
+
+<script>
+const API_BASE = "https://web-production-315e.up.railway.app";
+
+const domainFilter = document.getElementById('domainFilter');
+const listContainer = document.getElementById('publishedList');
+
+domainFilter.addEventListener('change', () => {
+    loadPublishedForms(domainFilter.value);
+});
+
+function goBackToDashboard() {
+    window.location.href = "admin-dashboard.html";
+}
+
+async function loadPublishedForms(domain = "") {
+    const params = new URLSearchParams();
+    if (domain) params.append("domain", domain);
+    params.append("status", "final");
+    params.append("is_published", "true");
+
+    try {
+        const res = await fetch(`${API_BASE}/admin/published-forms?` + params.toString());
+        const data = await res.json();
+        renderPublishedForms(Array.isArray(data) ? data : (data.templates || []));
+    } catch (e) {
+        console.error("Failed to load published forms", e);
+        listContainer.innerHTML = "<p>Failed to load published forms.</p>";
+    }
+}
+
+function renderPublishedForms(items) {
+    listContainer.innerHTML = "";
+
+    if (!items.length) {
+        listContainer.innerHTML = "<p>No published forms yet.</p>";
+        return;
+    }
+
+    items.forEach(t => {
+        const card = document.createElement("div");
+        card.className = "draft-card";
+        card.innerHTML = `
+            <h3>${t.name || "Untitled Form"}</h3>
+            <p class="subtext">Domain: ${t.domain || "-"}</p>
+            <p>Status: ${t.status || "final"}</p>
+            <p>Public link: <a href="${t.public_url}" target="_blank">${t.public_url}</a></p>
+        `;
+        listContainer.appendChild(card);
+    });
+}
+
+loadPublishedForms();
+</script>
+
+</body>
+</html>
